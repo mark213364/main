@@ -47,7 +47,7 @@ export default {
           👋 Привет, ${name}!\nТекущий счёт: *${result?.count ?? 0}*\n\nОткрой приложение 👇,
           {
             inline_keyboard: [[
-              { text: '🚀 Открыть приложение', web_app: { url: 'https://ТВОЙ_GITHUB_PAGES_URL/' } }
+              { text: '🚀 Открыть приложение', web_app: { url: 'https://mark213364.github.io/main/index.html' } }
             ]]
           }
         );
