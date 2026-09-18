@@ -47,8 +47,7 @@ export default {
           `👋 Привет, заходи в игру \n\nВыбери действие 👇`,
           {
             inline_keyboard: [[
-              { text: '🚀 Открыть приложение', web_app: { url: 'https://mark213364.github.io/main/index.html' }},
-              { text: 'Информация' }
+              { text: '🚀 Открыть приложение', web_app: { url: 'https://mark213364.github.io/main/index.html' }}
             ]]
           }
         );
