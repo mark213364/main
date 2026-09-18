@@ -405,11 +405,11 @@
               <div class="rank ${rankClass}">${rankDisplay}</div>
               <div class="player-name">${escapeHtml(p.name || 'Игрок')}</div>
               <div class="player-score">${p.count}</div>
-            </div>
+            </div>`
           ;
         }).join('');
       } catch (e) {
-        leaderboardList.innerHTML = '<div class="empty">Ошибка загрузки 😢</div>`;
+        leaderboardList.innerHTML = '<div class="empty">Ошибка загрузки 😢</div>;
         console.error(e);
       }
     }
