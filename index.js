@@ -12,24 +12,24 @@ export default {
       const callbackQuery = update.callback_query;
 
       // Обработка команды /start
-if (message && message.text === '/start') {
-  const chatId = message.chat.id;
+    if (message && message.text === '/start') {
+    const chatId = message.chat.id;
 
-  await env.DB.prepare(
-    'INSERT OR IGNORE INTO counters (chat_id, count) VALUES (?, 0)'
-  ).bind(chatId).run();
+    await env.DB.prepare(
+      'INSERT OR IGNORE INTO counters (chat_id, count) VALUES (?, 0)'
+    ).bind(chatId).run();
 
-  const result = await env.DB.prepare(
-    'SELECT count FROM counters WHERE chat_id = ?'
-  ).bind(chatId).first();
+    const result = await env.DB.prepare(
+      'SELECT count FROM counters WHERE chat_id = ?'
+    ).bind(chatId).first();
 
-  await sendMessage(env.BOT_TOKEN, chatId,
-    👋 Привет! Текущий счёт: *${result?.count ?? 0}*\n\nВыбери действие 👇,
-    {
-      inline_keyboard: [[
+await sendMessage(env.BOT_TOKEN, chatId,
+  👋 Привет! Текущий счёт: *${result?.count ?? 0}*\n\nВыбери действие 👇,
+   {
+   inline_keyboard: [[
         {
           text: '🚀 Открыть приложение',
-          web_app: { url: 'https://твой-ник.github.io/твой-репо/' }
+          web_app: { url: 'https://mark213364.github.io/твой-репо/' }
         },
         {
           text: 'ℹ️ О боте',
