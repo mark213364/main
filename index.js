@@ -63,7 +63,7 @@ await sendMessage(env.BOT_TOKEN, chatId,
         );
 
         await fetch(
-          'https://api.telegram.org/bot${env.BOT_TOKEN}/answerCallbackQuery',
+          `https://api.telegram.org/bot${env.BOT_TOKEN}/answerCallbackQuery`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -83,7 +83,7 @@ await sendMessage(env.BOT_TOKEN, chatId,
 };
 
 async function sendMessage(token, chatId, text, keyboard) {
-  return fetch('https://api.telegram.org/bot${token}/sendMessage', {
+  return fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -96,7 +96,7 @@ async function sendMessage(token, chatId, text, keyboard) {
 }
 
 async function editMessage(token, chatId, messageId, text, keyboard) {
-  return fetch('https://api.telegram.org/bot${token}/editMessageText', {
+  return fetch(`https://api.telegram.org/bot${token}/editMessageText`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
