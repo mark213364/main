@@ -24,7 +24,7 @@ export default {
     ).bind(chatId).first();
 
 await sendMessage(env.BOT_TOKEN, chatId,
-  👋 Привет! Текущий счёт: *${result?.count ?? 0}*\n\nВыбери действие 👇,
+  '👋 Привет! Текущий счёт: *${result?.count ?? 0}*\n\nВыбери действие 👇',
    {
    inline_keyboard: [[
         {
@@ -54,7 +54,7 @@ await sendMessage(env.BOT_TOKEN, chatId,
         ).bind(chatId).first();
 
         await editMessage(env.BOT_TOKEN, chatId, messageId,
-          👋 Текущий счёт: *${result.count}*\n\nЖми кнопку 👇,
+          '👋 Текущий счёт: *${result.count}*\n\nЖми кнопку 👇',
           {
             inline_keyboard: [[
               { text: '➕ Нажми меня', callback_data: 'tap' }
