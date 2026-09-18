@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>BasicClickBot</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
@@ -18,21 +18,26 @@
       height: 100%;
       overflow: hidden;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: linear-gradient(135deg, #0a0e27 0%, #1a1a4e 50%, #4a1a6b 100%);
-      background-attachment: fixed;
       color: #ffffff;
       user-select: none;
       -webkit-user-select: none;
     }
 
+    body {
+      background: linear-gradient(135deg, #0a0e27 0%, #1a1a4e 50%, #4a1a6b 100%);
+      background-attachment: fixed;
+    }
+
     .container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      width: 100%;
-      height: 100vh;
-      height: 100dvh;
       gap: 50px;
       padding: 20px;
     }
@@ -91,7 +96,6 @@
 
     let count = 0;
 
-    // Загружаем сохранённый счёт из облака Telegram
     if (tg?.CloudStorage) {
       tg.CloudStorage.getItem('tap_count', (err, value) => {
         if (!err && value) {
@@ -101,7 +105,6 @@
       });
     }
 
-    // Обработка нажатия
     btn.addEventListener('click', () => {
       count++;
       counterEl.textContent = count;
@@ -113,7 +116,6 @@
         tg.HapticFeedback.impactOccurred('medium');
       }
 
-      // Сохраняем в облако Telegram
       if (tg?.CloudStorage) {
         tg.CloudStorage.setItem('tap_count', String(count));
       }
