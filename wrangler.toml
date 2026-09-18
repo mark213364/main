@@ -5,4 +5,4 @@ compatibility_date = "2024-01-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "basicclickbot-db"
-database_id = "ТВОЙ_DATABASE_ID"
+database_id = "a65e7148-e396-4712-9221-2b8590f0f132"
