@@ -44,7 +44,7 @@ export default {
         ).bind(chatId).first();
 
         await sendMessage(env.BOT_TOKEN, chatId,
-          👋 Привет, ${name}!\nТекущий счёт: *${result?.count ?? 0}*\n\nОткрой приложение 👇,
+          `👋 Привет, заходи в игру \n\nВыбери действие 👇`,
           {
             inline_keyboard: [[
               { text: '🚀 Открыть приложение', web_app: { url: 'https://mark213364.github.io/main/index.html' } }
