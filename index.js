@@ -63,7 +63,7 @@ await sendMessage(env.BOT_TOKEN, chatId,
         );
 
         await fetch(
-          https://api.telegram.org/bot${env.BOT_TOKEN}/answerCallbackQuery,
+          'https://api.telegram.org/bot${env.BOT_TOKEN}/answerCallbackQuery',
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
