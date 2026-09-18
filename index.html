@@ -293,7 +293,7 @@
           tg.CloudStorage.setItem('tap_count', String(count));
         }
         try {
-          await fetch(${API_URL}/api/count, {
+          await fetch(`${API_URL}/api/count`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
