@@ -371,7 +371,7 @@
         tab.classList.add('active');
 
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.getElementById(screen-${screenName}).classList.add('active');
+        document.getElementById(`screen-${screenName}).classList.add('active'`);
 
         if (screenName === 'leaderboard') loadLeaderboard();
         if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
