@@ -1,8 +1,6 @@
 export default {
   async fetch(request, env) {
-    const url = new URL(request.url);
-
-    // Проверяем, что это запрос от Telegram
+    // Проверяем, что это POST
     if (request.method !== 'POST') {
       return new Response('Bot is running!', { status: 200 });
     }
@@ -10,11 +8,13 @@ export default {
     try {
       const update = await request.json();
 
-      // Обработка команды /start
-      if (update.message && update.message.text === '/start') {
-        const chatId = update.message.chat.id;
+      const message = update.message;
+      const callbackQuery = update.callback_query;
 
-        // Создаём запись, если её нет
+      // Обработка команды /start
+      if (message && message.text === '/start') {
+        const chatId = message.chat.id;
+
         await env.DB.prepare(
           'INSERT OR IGNORE INTO counters (chat_id, count) VALUES (?, 0)'
         ).bind(chatId).run();
@@ -24,7 +24,7 @@ export default {
         ).bind(chatId).first();
 
         await sendMessage(env.BOT_TOKEN, chatId,
-          '👋 Привет! Текущий счёт: *${result?.count ?? 0}*\n\nЖми кнопку 👇',
+          👋 Привет! Текущий счёт: *${result?.count ?? 0}*\n\nЖми кнопку 👇,
           {
             inline_keyboard: [[
               { text: '➕ Нажми меня', callback_data: 'tap' }
@@ -34,11 +34,10 @@ export default {
       }
 
       // Обработка нажатия кнопки
-      if (update.callback_query && update.callback_query.data === 'tap') {
-        const chatId = update.callback_query.message.chat.id;
-        const messageId = update.callback_query.message.message_id;
+      if (callbackQuery && callbackQuery.data === 'tap') {
+        const chatId = callbackQuery.message.chat.id;
+        const messageId = callbackQuery.message.message_id;
 
-        // Увеличиваем счётчик и получаем новое значение
         await env.DB.prepare(
           'UPDATE counters SET count = count + 1 WHERE chat_id = ?'
         ).bind(chatId).run();
@@ -47,9 +46,8 @@ export default {
           'SELECT count FROM counters WHERE chat_id = ?'
         ).bind(chatId).first();
 
-        // Обновляем сообщение
         await editMessage(env.BOT_TOKEN, chatId, messageId,
-          '👋 Текущий счёт: *${result.count}*\n\nЖми кнопку 👇',
+          👋 Текущий счёт: *${result.count}*\n\nЖми кнопку 👇,
           {
             inline_keyboard: [[
               { text: '➕ Нажми меня', callback_data: 'tap' }
@@ -57,14 +55,13 @@ export default {
           }
         );
 
-        // Убираем "часики" на кнопке
         await fetch(
-          'https://api.telegram.org/bot${env.BOT_TOKEN}/answerCallbackQuery',
+          https://api.telegram.org/bot${env.BOT_TOKEN}/answerCallbackQuery,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              callback_query_id: update.callback_query.id
+              callback_query_id: callbackQuery.id
             })
           }
         );
@@ -72,15 +69,14 @@ export default {
 
       return new Response('OK', { status: 200 });
     } catch (e) {
-      console.error(e);
+      console.error('Error:', e.message, e.stack);
       return new Response('Error', { status: 500 });
     }
   }
 };
 
-// Хелпер: отправить сообщение
 async function sendMessage(token, chatId, text, keyboard) {
-  return fetch('https://api.telegram.org/bot${token}/sendMessage', {
+  return fetch(https://api.telegram.org/bot${token}/sendMessage, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -92,9 +88,8 @@ async function sendMessage(token, chatId, text, keyboard) {
   });
 }
 
-// Хелпер: отредактировать сообщение
 async function editMessage(token, chatId, messageId, text, keyboard) {
-  return fetch('https://api.telegram.org/bot${token}/editMessageText', {
+  return fetch(https://api.telegram.org/bot${token}/editMessageText, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
