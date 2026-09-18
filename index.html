@@ -26,6 +26,17 @@
       overflow: hidden;
     }
 
+    /* ===== Canvas для частиц ===== */
+    #particles {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;   /* КРИТИЧНО: не перехватывает клики */
+      z-index: 1;
+    }
+
     /* ===== Вкладки сверху ===== */
     .tabs {
       position: fixed;
@@ -33,11 +44,11 @@
       left: 0;
       right: 0;
       display: flex;
-      background: rgba(10, 14, 39, 0.7);
+      background: rgba(10, 14, 39, 0.75);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
       border-bottom: 1px solid rgba(168, 85, 247, 0.3);
-      z-index: 10;
+      z-index: 100;
     }
 
     .tab {
@@ -49,13 +60,12 @@
       font-size: 15px;
       font-weight: 600;
       cursor: pointer;
-      transition: color 0.2s ease, background 0.2s ease;
+      transition: color 0.2s ease;
       position: relative;
+      font-family: inherit;
     }
 
-    .tab.active {
-      color: #ffffff;
-    }
+    .tab.active { color: #ffffff; }
 
     .tab.active::after {
       content: '';
@@ -76,11 +86,10 @@
       left: 0;
       right: 0;
       bottom: 0;
+      z-index: 50;
     }
 
-    .screen.active {
-      display: block;
-    }
+    .screen.active { display: block; }
 
     /* ===== Экран кликера ===== */
     #screen-clicker .container {
@@ -90,6 +99,7 @@
       justify-items: center;
       height: 100%;
       padding: 20px;
+      box-sizing: border-box;
     }
 
     .counter {
@@ -104,9 +114,7 @@
       margin-bottom: 40px;
     }
 
-    .counter.bump {
-      transform: scale(1.15);
-    }
+    .counter.bump { transform: scale(1.15); }
 
     .btn {
       grid-row: 2;
@@ -124,22 +132,12 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      font-family: inherit;
+      position: relative;
+      z-index: 60;
     }
 
-    .btn:active {
-      transform: scale(0.94);
-    }
-
-    /* Canvas для частиц */
-    #particles {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 5;
-    }
+    .btn:active { transform: scale(0.94); }
 
     /* ===== Экран лидерборда ===== */
     #screen-leaderboard {
@@ -168,14 +166,12 @@
       background: rgba(255, 255, 255, 0.05);
       border: 1px solid rgba(168, 85, 247, 0.2);
       border-radius: 14px;
-      transition: transform 0.15s ease;
     }
 
     .leaderboard-item.me {
       background: rgba(168, 85, 247, 0.15);
       border-color: rgba(168, 85, 247, 0.5);
     }
-
     .rank {
       font-size: 20px;
       font-weight: 700;
@@ -183,6 +179,7 @@
       text-align: center;
       flex-shrink: 0;
     }
+
     .rank.gold   { color: #ffd700; }
     .rank.silver { color: #c0c0c0; }
     .rank.bronze { color: #cd7f32; }
@@ -244,7 +241,8 @@
       tg.expand();
     }
 
-    const API_URL = 'basicclickbot.g3316464.workers.dev';
+    // ⚠️ ЗАМЕНИ на URL твоего воркера
+    const API_URL = 'https://basicclickbot.g3316464.workers.dev';
 
     const counterEl = document.getElementById('counter');
     const btn = document.getElementById('tapBtn');
@@ -266,18 +264,15 @@
 
     // ===== Загрузка счёта =====
     async function loadCount() {
-      console.log('initData:', tg.initData);
       try {
         const res = await fetch(${API_URL}/api/me, {
           headers: { 'X-Init-Data': tg.initData }
         });
-        console.log('Response status:', res.status);
         const data = await res.json();
-        console.log('Response data:', data);
         count = data.count || 0;
         counterEl.textContent = count;
       } catch (e) {
-        console.error('Load error', e);
+        console.error('Load error:', e);
         // Фолбэк на CloudStorage
         if (tg?.CloudStorage) {
           tg.CloudStorage.getItem('tap_count', (err, value) => {
@@ -290,16 +285,13 @@
       }
     }
 
-    // ===== Сохранение счёта (с дебаунсом) =====
+    // ===== Сохранение счёта =====
     function saveCount() {
       clearTimeout(saveTimer);
       saveTimer = setTimeout(async () => {
-        // Локальный кэш
         if (tg?.CloudStorage) {
           tg.CloudStorage.setItem('tap_count', String(count));
         }
-
-        // На сервер
         try {
           await fetch(${API_URL}/api/count, {
             method: 'POST',
@@ -332,6 +324,7 @@
         });
       }
     }
+
     function animate() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       for (let i = particles.length - 1; i >= 0; i--) {
@@ -341,12 +334,7 @@
         p.vy += 0.15;
         p.vx *= 0.98;
         p.life -= p.decay;
-
-        if (p.life <= 0) {
-          particles.splice(i, 1);
-          continue;
-        }
-
+        if (p.life <= 0) { particles.splice(i, 1); continue; }
         ctx.globalAlpha = p.life;
         ctx.fillStyle = p.color;
         ctx.beginPath();
@@ -360,11 +348,8 @@
 
     // ===== Клик =====
     btn.addEventListener('click', () => {
-      console.log('CLICK!!!');
       count++;
       counterEl.textContent = count;
-      console.log('count:', count);
-      
 
       counterEl.classList.add('bump');
       setTimeout(() => counterEl.classList.remove('bump'), 150);
@@ -388,10 +373,7 @@
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(screen-${screenName}).classList.add('active');
 
-        if (screenName === 'leaderboard') {
-          loadLeaderboard();
-        }
-
+        if (screenName === 'leaderboard') loadLeaderboard();
         if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
       });
     });
@@ -418,11 +400,10 @@
           const rankClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
           const isMe = p.user_id === myId ? 'me' : '';
           const rankDisplay = i < 3 ? medals[i] : ${i + 1};
-
           return 
             <div class="leaderboard-item ${isMe}">
               <div class="rank ${rankClass}">${rankDisplay}</div>
-              <div class="player-name">${escapeHtml(p.name)}</div>
+              <div class="player-name">${escapeHtml(p.name || 'Игрок')}</div>
               <div class="player-score">${p.count}</div>
             </div>
           ;
