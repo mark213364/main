@@ -383,7 +383,7 @@
       leaderboardList.innerHTML = '<div class="loading">Загрузка...</div>';
 
       try {
-        const res = await fetch(${API_URL}/api/top, {
+        const res = await fetch(`${API_URL}/api/top`, {
           headers: { 'X-Init-Data': tg.initData }
         });
         const data = await res.json();
