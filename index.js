@@ -24,7 +24,7 @@ export default {
     ).bind(chatId).first();
 
 await sendMessage(env.BOT_TOKEN, chatId,
-  '👋 Привет! Текущий счёт: *${result?.count ?? 0}*\n\nВыбери действие 👇',
+  '👋 Привет! \n\nВыбери действие 👇',
    {
    inline_keyboard: [[
         {
