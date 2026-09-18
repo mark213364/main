@@ -266,14 +266,18 @@
 
     // ===== Загрузка счёта =====
     async function loadCount() {
+      console.log('initData:', tg.initData);
       try {
         const res = await fetch(${API_URL}/api/me, {
           headers: { 'X-Init-Data': tg.initData }
         });
+        console.log('Response status:', res.status);
         const data = await res.json();
+        console.log('Response data:', data);
         count = data.count || 0;
         counterEl.textContent = count;
       } catch (e) {
+        console.error('Load error', e);
         // Фолбэк на CloudStorage
         if (tg?.CloudStorage) {
           tg.CloudStorage.getItem('tap_count', (err, value) => {
