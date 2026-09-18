@@ -360,8 +360,11 @@
 
     // ===== Клик =====
     btn.addEventListener('click', () => {
+      console.log('CLICK!!!');
       count++;
       counterEl.textContent = count;
+      console.log('count:', count);
+      
 
       counterEl.classList.add('bump');
       setTimeout(() => counterEl.classList.remove('bump'), 150);
