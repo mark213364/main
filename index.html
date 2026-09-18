@@ -1,3 +1,159 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>BasicClickBot</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html { height: 100%; }
+
+    body {
+      min-height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #ffffff;
+      user-select: none;
+      -webkit-user-select: none;
+      background: linear-gradient(135deg, #0a0e27 0%, #1a1a4e 50%, #4a1a6b 100%);
+      background-attachment: fixed;
+      overflow: hidden;
+    }
+
+    /* Canvas для частиц — позади всего */
+    #particles {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .container {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      grid-template-rows: 1fr auto 1fr;
+      align-items: center;
+      justify-items: center;
+      min-height: 100vh;
+      min-height: 100svh;
+      padding: 20px;
+    }
+
+    .counter {
+      grid-row: 1;
+      align-self: end;
+      font-size: 96px;
+      font-weight: 700;
+      line-height: 1;
+      color: #ffffff;
+      text-shadow: 0 0 30px rgba(168, 85, 247, 0.6);
+      transition: transform 0.15s ease;
+      margin-bottom: 40px;
+    }
+
+    .counter.bump {
+      transform: scale(1.15);
+    }
+
+    .btn {
+      grid-row: 2;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      border: none;
+      background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+      color: #ffffff;
+      font-size: 22px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 10px 40px rgba(168, 85, 247, 0.5);
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn:active {
+      transform: scale(0.94);
+      box-shadow: 0 5px 20px rgba(168, 85, 247, 0.4);
+    }
+  </style>
+</head>
+<body>
+  <canvas id="particles"></canvas>
+
+  <div class="container">
+    <div class="counter" id="counter">0</div>
+    <button class="btn" id="tapBtn">Нажми</button>
+  </div>
+
+  <script>
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+    }
+
+    const counterEl = document.getElementById('counter');
+    const btn = document.getElementById('tapBtn');
+    const canvas = document.getElementById('particles');
+    const ctx = canvas.getContext('2d');
+
+    let count = 0;
+    let particles = [];
+
+    // Подгоняем canvas под размер экрана
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // Загружаем счёт
+    if (tg?.CloudStorage) {
+      tg.CloudStorage.getItem('tap_count', (err, value) => {
+        if (!err && value) {
+          count = parseInt(value, 10) || 0;
+          counterEl.textContent = count;
+        }
+      });
+    }
+
+    // Создаём частицы в точке (x, y)
+    function spawnParticles(x, y) {
+      const colors = ['#a855f7', '#6366f1', '#c084fc', '#818cf8', '#e0aaff'];
+      const count = 18;
+
+      for (let i = 0; i < count; i++) {
+        const angle = (Math.PI * 2 * i) / count + Math.random() * 0.5;
+        const speed = 3 + Math.random() * 4;
+        particles.push({
+          x: x,
+          y: y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          size: 3 + Math.random() * 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          life: 1,
+          decay: 0.02 + Math.random() * 0.02,
+        });
+      }
+    }
+
+    // Анимация
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
         p.x += p.vx;
