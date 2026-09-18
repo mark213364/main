@@ -6,65 +6,32 @@
   <title>Счётчик</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-    }
-
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     html, body {
-      height: 100%;
-      overflow: hidden;
+      height: 100%; overflow: hidden;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: var(--tg-theme-bg-color, #ffffff);
       color: var(--tg-theme-text-color, #000000);
       user-select: none;
     }
-
     .container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      gap: 40px;
-      padding: 20px;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; height: 100vh; gap: 40px; padding: 20px;
     }
-
     .counter {
-      font-size: 96px;
-      font-weight: 700;
-      line-height: 1;
-      color: var(--tg-theme-text-color, #000000);
+      font-size: 96px; font-weight: 700; line-height: 1;
       transition: transform 0.15s ease;
     }
-
-    .counter.bump {
-      transform: scale(1.15);
-    }
-
+    .counter.bump { transform: scale(1.15); }
     .btn {
-      width: 200px;
-      height: 200px;
-      border-radius: 50%;
-      border: none;
+      width: 200px; height: 200px; border-radius: 50%; border: none;
       background: var(--tg-theme-button-color, #2ea6ff);
       color: var(--tg-theme-button-text-color, #ffffff);
-      font-size: 22px;
-      font-weight: 600;
-      cursor: pointer;
+      font-size: 22px; font-weight: 600; cursor: pointer;
       box-shadow: 0 10px 30px rgba(46, 166, 255, 0.4);
-      transition: transform 0.1s ease, box-shadow 0.1s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      transition: transform 0.1s ease;
     }
-
-    .btn:active {
-      transform: scale(0.94);
-      box-shadow: 0 4px 15px rgba(46, 166, 255, 0.3);
-    }
+    .btn:active { transform: scale(0.94); }
   </style>
 </head>
 <body>
@@ -74,29 +41,39 @@
   </div>
 
   <script>
-    // Инициализация Telegram WebApp
     const tg = window.Telegram?.WebApp;
-    if (tg) {
-      tg.ready();
-      tg.expand();
-    }
+    if (tg) { tg.ready(); tg.expand(); }
 
     const counterEl = document.getElementById('counter');
     const btn = document.getElementById('tapBtn');
 
     let count = 0;
 
+    // 1. Загружаем счёт из CloudStorage при старте
+    if (tg?.CloudStorage) {
+      tg.CloudStorage.getItem('tap_count', (err, value) => {
+        if (!err && value) {
+          count = parseInt(value, 10) || 0;
+          counterEl.textContent = count;
+        }
+      });
+    }
+
+    // 2. Обработка нажатия
     btn.addEventListener('click', () => {
       count++;
       counterEl.textContent = count;
 
-      // Анимация "прыжка" счётчика
       counterEl.classList.add('bump');
       setTimeout(() => counterEl.classList.remove('bump'), 150);
 
-      // Тактильная отдача (вибрация) в Telegram
       if (tg?.HapticFeedback) {
         tg.HapticFeedback.impactOccurred('medium');
+      }
+
+      // 3. Сохраняем в CloudStorage
+      if (tg?.CloudStorage) {
+        tg.CloudStorage.setItem('tap_count', String(count));
       }
     });
   </script>
