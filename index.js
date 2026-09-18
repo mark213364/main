@@ -127,7 +127,7 @@ function verifyInitData(initData, botToken) {
 
     const dataCheckString = [...params.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([k, v]) => ${k}=${v})
+      .map(([k, v]) => `${k}=${v}`)
       .join('\n');
     // В Workers нет crypto.createHmac — используем Web Crypto API
     // Но для простоты пока пропускаем проверку подписи.
@@ -140,7 +140,7 @@ function verifyInitData(initData, botToken) {
 }
 
 async function sendMessage(token, chatId, text, keyboard) {
-  return fetch(https://api.telegram.org/bot${token}/sendMessage, {
+  return fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
