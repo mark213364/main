@@ -265,7 +265,7 @@
     // ===== Загрузка счёта =====
     async function loadCount() {
       try {
-        const res = await fetch(${API_URL}/api/me, {
+        const res = await fetch(`${API_URL}/api/me`, {
           headers: { 'X-Init-Data': tg.initData }
         });
         const data = await res.json();
