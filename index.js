@@ -29,7 +29,7 @@ await sendMessage(env.BOT_TOKEN, chatId,
    inline_keyboard: [[
         {
           text: '🚀 Открыть приложение',
-          web_app: { url: 'https://mark213364.github.io/твой-репо/' }
+          web_app: { url: 'https://mark213364.github.io/main/index.html' }
         },
         {
           text: 'ℹ️ О боте',
@@ -83,7 +83,7 @@ await sendMessage(env.BOT_TOKEN, chatId,
 };
 
 async function sendMessage(token, chatId, text, keyboard) {
-  return fetch(https://api.telegram.org/bot${token}/sendMessage, {
+  return fetch('https://api.telegram.org/bot${token}/sendMessage', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -96,7 +96,7 @@ async function sendMessage(token, chatId, text, keyboard) {
 }
 
 async function editMessage(token, chatId, messageId, text, keyboard) {
-  return fetch(https://api.telegram.org/bot${token}/editMessageText, {
+  return fetch('https://api.telegram.org/bot${token}/editMessageText', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
