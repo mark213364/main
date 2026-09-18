@@ -1,116 +1,41 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>BasicClickBot</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-    }
+for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.15; // гравитация
+        p.vx *= 0.98; // трение
+        p.life -= p.decay;
 
-    html {
-      height: 100%;
-    }
-
-    body {
-      min-height: 100%;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      color: #ffffff;
-      user-select: none;
-      -webkit-user-select: none;
-      background: linear-gradient(135deg, #0a0e27 0%, #1a1a4e 50%, #4a1a6b 100%);
-      background-attachment: fixed;
-      overflow: hidden;
-    }
-
-    .container {
-      display: grid;
-      grid-template-rows: 1fr auto 1fr;
-      align-items: center;
-      justify-items: center;
-      min-height: 100vh;
-      min-height: 100svh;
-      padding: 20px;
-    }
-
-    .counter {
-      grid-row: 1;
-      align-self: end;
-      font-size: 96px;
-      font-weight: 700;
-      line-height: 1;
-      color: #ffffff;
-      text-shadow: 0 0 30px rgba(168, 85, 247, 0.6);
-      transition: transform 0.15s ease;
-      margin-bottom: 40px;
-    }
-
-    .counter.bump {
-      transform: scale(1.15);
-    }
-
-    .btn {
-      grid-row: 2;
-      width: 200px;
-      height: 200px;
-      border-radius: 50%;
-      border: none;
-      background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-      color: #ffffff;
-      font-size: 22px;
-      font-weight: 600;
-      cursor: pointer;
-      box-shadow: 0 10px 40px rgba(168, 85, 247, 0.5);
-      transition: transform 0.1s ease, box-shadow 0.1s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .btn:active {
-      transform: scale(0.94);
-      box-shadow: 0 5px 20px rgba(168, 85, 247, 0.4);
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="counter" id="counter">0</div>
-    <button class="btn" id="tapBtn">Нажми</button>
-  </div>
-
-  <script>
-    const tg = window.Telegram?.WebApp;
-    if (tg) {
-      tg.ready();
-      tg.expand();
-    }
-
-    const counterEl = document.getElementById('counter');
-    const btn = document.getElementById('tapBtn');
-
-    let count = 0;
-
-    if (tg?.CloudStorage) {
-      tg.CloudStorage.getItem('tap_count', (err, value) => {
-        if (!err && value) {
-          count = parseInt(value, 10) || 0;
-          counterEl.textContent = count;
+        if (p.life <= 0) {
+          particles.splice(i, 1);
+          continue;
         }
-      });
-    }
 
-    btn.addEventListener('click', () => {
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.globalAlpha = 1;
+      requestAnimationFrame(animate);
+    }
+    animate();
+
+    // Нажатие
+    btn.addEventListener('click', (e) => {
       count++;
       counterEl.textContent = count;
 
       counterEl.classList.add('bump');
       setTimeout(() => counterEl.classList.remove('bump'), 150);
+
+      // Частицы из центра кнопки
+      const rect = btn.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      spawnParticles(cx, cy);
 
       if (tg?.HapticFeedback) {
         tg.HapticFeedback.impactOccurred('medium');
