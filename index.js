@@ -35,8 +35,8 @@ export default {
           .filter(Boolean).join(' ') || 'Игрок';
 
         await env.DB.prepare(
-          INSERT INTO counters (chat_id, name, count) VALUES (?, ?, 0)
-           ON CONFLICT(chat_id) DO UPDATE SET name = excluded.name
+          `INSERT INTO counters (chat_id, name, count) VALUES (?, ?, 0)
+           ON CONFLICT(chat_id) DO UPDATE SET name = excluded.name`
         ).bind(chatId, name).run();
 
         const result = await env.DB.prepare(
@@ -89,8 +89,8 @@ async function handleApi(request, env, path, corsHeaders) {
     }
 
     await env.DB.prepare(
-      INSERT INTO counters (chat_id, name, count) VALUES (?, 'Игрок', ?)
-       ON CONFLICT(chat_id) DO UPDATE SET count = excluded.count
+      `INSERT INTO counters (chat_id, name, count) VALUES (?, 'Игрок', ?)
+       ON CONFLICT(chat_id) DO UPDATE SET count = excluded.count`
     ).bind(userId, count).run();
 
     return json({ ok: true }, 200, corsHeaders);
