@@ -112,7 +112,7 @@ async function handleApi(request, env, path, corsHeaders) {
     const energyUpdatedAt = row?.energy_updated_at ?? now;
 
     const elapsed = now - energyUpdatedAt;
-    const restored = Math.floor(elapsed / 2000) * 5;
+    const restored = Math.floor(elapsed / 5000) * 5;
     if (restored > 0) {
       energy = Math.min(500, energy + restored);
     }
@@ -147,13 +147,13 @@ async function handleApi(request, env, path, corsHeaders) {
     let energy = row?.energy ?? 500;
     let energyUpdatedAt = row?.energy_updated_at ?? now;
 
-    // Восстанавливаем энергию: +5 за каждые 2 секунды
+    // Восстанавливаем энергию: +5 за каждые 5 секунд
     const elapsed = now - energyUpdatedAt;
-    const intervals = Math.floor(elapsed / 2000);
+    const intervals = Math.floor(elapsed / 5000);
     const restored = intervals * 5;
     if (restored > 0) {
       energy = Math.min(500, energy + restored);
-      energyUpdatedAt = energyUpdatedAt + intervals * 2000;
+      energyUpdatedAt = energyUpdatedAt + intervals * 5000;
     }
 
     // Проверка: хватает ли энергии
