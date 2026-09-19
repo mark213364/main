@@ -375,6 +375,70 @@ async function handleApi(request, env, path, corsHeaders) {
     }, 200, corsHeaders);
   }
 
+    // ---------- POST /api/bonuses/buy ----------
+  if (path === '/api/bonuses/buy' && request.method === 'POST') {
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return json({ error: 'invalid body' }, 400, corsHeaders);
+    }
+
+    const bonusId = body.bonusId;
+    const bonus = BONUSES[bonusId];
+
+    if (!bonus) {
+      return json({ error: 'bonus not found' }, 404, corsHeaders);
+    }
+
+    const now = Date.now();
+
+    const active = await env.DB.prepare(
+      `SELECT id FROM purchases
+       WHERE chat_id = ?
+         AND item_id = ?
+         AND expires_at IS NOT NULL
+         AND expires_at > ?`
+    ).bind(userId, bonusId, now).first();
+
+    if (active) {
+      return json({ error: 'already_active' }, 400, corsHeaders);
+    }
+
+    const row = await env.DB.prepare(
+      'SELECT count FROM counters WHERE chat_id = ?'
+    ).bind(userId).first();
+
+    const currentCount = row?.count ?? 0;
+
+    if (currentCount < bonus.price) {
+      return json({
+        error: 'not_enough',
+        need: bonus.price,
+        have: currentCount
+      }, 400, corsHeaders);
+    }
+
+    const newCount = currentCount - bonus.price;
+    const expiresAt = now + bonus.duration;
+
+    await env.DB.prepare(
+      'UPDATE counters SET count = ? WHERE chat_id = ?'
+    ).bind(newCount, userId).run();
+
+    await env.DB.prepare(
+      `INSERT INTO purchases (chat_id, item_id, expires_at, created_at)
+       VALUES (?, ?, ?, ?)`
+    ).bind(userId, bonusId, expiresAt, now).run();
+
+    return json({
+      ok: true,
+      newCount: newCount,
+      bonus: bonus,
+      expiresAt: expiresAt,
+    }, 200, corsHeaders);
+  }
+  
   // ---------- POST /api/themes/activate ----------
   if (path === '/api/themes/activate' && request.method === 'POST') {
     let body;
