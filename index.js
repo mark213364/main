@@ -32,9 +32,9 @@ export default {
           .filter(Boolean).join(' ') || 'Игрок';
 
         await env.DB.prepare(
-          `INSERT INTO counters (chat_id, name, count) VALUES (?, ?, 0)`
+          `INSERT INTO counters (chat_id, name, count) VALUES (?, ?, 0)
            ON CONFLICT(chat_id) DO UPDATE SET name = excluded.name
-        ).bind(chatId, name).run();
+        `).bind(chatId, name).run();
 
         const result = await env.DB.prepare(
           'SELECT count FROM counters WHERE chat_id = ?'
