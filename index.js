@@ -5,6 +5,89 @@
 // ⚠️ ЗАМЕНИ на свой Telegram user_id
 const ADMIN_ID = 5946292761;
 
+// ============================================================
+// ТЕМЫ ОФОРМЛЕНИЯ
+// ============================================================
+const THEMES = {
+  classic: {
+    id: 'classic',
+    name: 'Классика',
+    icon: '🎨',
+    desc: 'Сине-фиолетовый градиент',
+    price: 0,
+    bg: 'linear-gradient(135deg, #0a0e27 0%, #1a1a4e 50%, #4a1a6b 100%)',
+    btn: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+    shadow: 'rgba(168, 85, 247, 0.5)',
+    accent: '#a855f7',
+  },
+  ocean: {
+    id: 'ocean',
+    name: 'Океан',
+    icon: '🌊',
+    desc: 'Голубой и бирюзовый',
+    price: 200,
+    bg: 'linear-gradient(135deg, #0a1929 0%, #0e3a5c 50%, #1e6091 100%)',
+    btn: 'linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%)',
+    shadow: 'rgba(6, 182, 212, 0.5)',
+    accent: '#06b6d4',
+  },
+  sunset: {
+    id: 'sunset',
+    name: 'Закат',
+    icon: '🌅',
+    desc: 'Оранжевый и розовый',
+    price: 500,
+    bg: 'linear-gradient(135deg, #1a0a1f 0%, #4a1e3a 50%, #8b2f4a 100%)',
+    btn: 'linear-gradient(135deg, #f97316 0%, #ec4899 100%)',
+    shadow: 'rgba(236, 72, 153, 0.5)',
+    accent: '#ec4899',
+  },
+  forest: {
+    id: 'forest',
+    name: 'Лес',
+    icon: '🌲',
+    desc: 'Зелёный и изумрудный',
+    price: 500,
+    bg: 'linear-gradient(135deg, #0a1f0a 0%, #143d1f 50%, #1e5f2e 100%)',
+    btn: 'linear-gradient(135deg, #10b981 0%, #22c55e 100%)',
+    shadow: 'rgba(34, 197, 94, 0.5)',
+    accent: '#22c55e',
+  },
+  sakura: {
+    id: 'sakura',
+    name: 'Сакура',
+    icon: '🌸',
+    desc: 'Розовый и белый',
+    price: 1000,
+    bg: 'linear-gradient(135deg, #2a1a2e 0%, #5c2a4a 50%, #a86a8a 100%)',
+    btn: 'linear-gradient(135deg, #f472b6 0%, #fbcfe8 100%)',
+    shadow: 'rgba(244, 114, 182, 0.5)',
+    accent: '#f472b6',
+  },
+  dark: {
+    id: 'dark',
+    name: 'Тьма',
+    icon: '⚫',
+    desc: 'Чёрный и фиолетовый',
+    price: 1500,
+    bg: 'linear-gradient(135deg, #000000 0%, #0f0f1a 50%, #1a0a2e 100%)',
+    btn: 'linear-gradient(135deg, #1f1f3a 0%, #4c1d95 100%)',
+    shadow: 'rgba(76, 29, 149, 0.7)',
+    accent: '#7c3aed',
+  },
+  rainbow: {
+    id: 'rainbow',
+    name: 'Радуга',
+    icon: '🌈',
+    desc: 'Анимированный градиент',
+    price: 3000,
+    bg: 'linear-gradient(135deg, #ff0080, #ff8c00, #40e0d0, #8a2be2, #ff0080)',
+    btn: 'linear-gradient(135deg, #ff0080, #ff8c00, #40e0d0, #8a2be2, #ff0080)',
+    shadow: 'rgba(255, 0, 128, 0.5)',
+    accent: '#ff0080',
+    animated: true,
+  },
+};
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
