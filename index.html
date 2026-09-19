@@ -5,10 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>BasicClickBot</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
-  <!-- ============================================================
-       СТИЛИ
-       ============================================================ -->
   <style>
     * {
       margin: 0;
@@ -31,18 +27,16 @@
       overflow: hidden;
     }
 
-    /* ---------- Canvas для частиц ---------- */
     #particles {
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      pointer-events: none;   /* не перехватывает клики */
+      pointer-events: none;
       z-index: 1;
     }
 
-    /* ---------- Вкладки сверху ---------- */
     .tabs {
       position: fixed;
       top: 0;
@@ -83,20 +77,18 @@
       border-radius: 3px 3px 0 0;
     }
 
-    /* ---------- Экраны ---------- */
     .screen {
       display: none;
       position: absolute;
       top: 56px;
       left: 0;
       right: 0;
-      bottom: 130px;
+      bottom: 70px;
       z-index: 50;
     }
 
     .screen.active { display: block; }
 
-    /* ---------- Экран кликера ---------- */
     #screen-clicker .container {
       display: grid;
       grid-template-rows: 1fr auto 1fr;
@@ -147,7 +139,6 @@
 
     .btn:active { transform: scale(0.94); }
 
-    /* ---------- Экран лидерборда ---------- */
     #screen-leaderboard {
       overflow-y: auto;
       padding: 16px;
@@ -217,45 +208,6 @@
       font-size: 15px;
     }
 
-    /* ---------- Полоска энергии ---------- */
-    .energy-bar {
-      position: fixed;
-      bottom: 70px;
-      left: 16px;
-      right: 16px;
-      height: 36px;
-      background: rgba(10, 14, 39, 0.85);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      border: 1px solid rgba(168, 85, 247, 0.3);
-      border-radius: 18px;
-      overflow: hidden;
-      z-index: 150;
-    }
-
-    .energy-fill {
-      position: absolute;
-      top: 0;
-      left: 0;
-      height: 100%;
-      width: 100%;
-      background: linear-gradient(90deg, #6366f1, #a855f7);
-      transition: width 0.3s ease;
-    }
-
-    .energy-text {
-      position: absolute;
-      top: 50%;
-      right: 16px;
-      transform: translateY(-50%);
-      font-size: 14px;
-      font-weight: 700;
-      color: #ffffff;
-      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-      z-index: 1;
-    }
-
-    /* ---------- Нижняя панель ---------- */
     .bottom-nav {
       position: fixed;
       bottom: 0;
@@ -302,20 +254,13 @@
   </style>
 </head>
 <body>
-
-  <!-- ============================================================
-       HTML СТРУКТУРА
-       ============================================================ -->
-
   <canvas id="particles"></canvas>
 
-  <!-- Вкладки -->
   <div class="tabs">
     <button class="tab active" data-screen="clicker">🎯 Кликер</button>
     <button class="tab" data-screen="leaderboard">🏆 Рейтинг</button>
   </div>
 
-  <!-- Экран кликера -->
   <div class="screen active" id="screen-clicker">
     <div class="container">
       <div class="counter" id="counter">0</div>
@@ -323,7 +268,6 @@
     </div>
   </div>
 
-  <!-- Экран лидерборда -->
   <div class="screen" id="screen-leaderboard">
     <div class="leaderboard-title">🏆 Топ-10 игроков</div>
     <div class="leaderboard-list" id="leaderboardList">
@@ -331,13 +275,6 @@
     </div>
   </div>
 
-  <!-- Полоска энергии -->
-  <div class="energy-bar">
-    <div class="energy-fill" id="energyFill"></div>
-    <div class="energy-text" id="energyText">500 / 500</div>
-  </div>
-
-  <!-- Нижняя панель -->
   <div class="bottom-nav">
     <button class="nav-btn" id="donateBtn">
       <span class="icon">💝</span>
@@ -353,14 +290,7 @@
     </button>
   </div>
 
-  <!-- ============================================================
-       СКРИПТ
-       ============================================================ -->
   <script>
-    // ============================================================
-    // 1. ИНИЦИАЛИЗАЦИЯ
-    // ============================================================
-
     const tg = window.Telegram && window.Telegram.WebApp
       ? window.Telegram.WebApp
       : null;
@@ -370,33 +300,24 @@
       tg.expand();
     }
 
-    // ⚠️ ЗАМЕНИ на URL своего Cloudflare Worker (БЕЗ слэша в конце!)
+    // ⚠️ ЗАМЕНИ на URL воркера (без слэша в конце!)
     const API_URL = 'https://basicclickbot.g3316464.workers.dev';
 
     // ⚠️ ЗАМЕНИ на свои ссылки
     const DONATE_URL = 'https://t.me/tribute';
     const CHANNEL_URL = 'https://t.me/твой_канал';
 
-    // ---------- DOM-элементы ----------
     const counterEl = document.getElementById('counter');
     const btn = document.getElementById('tapBtn');
     const canvas = document.getElementById('particles');
     const ctx = canvas.getContext('2d');
     const leaderboardList = document.getElementById('leaderboardList');
-    const energyFill = document.getElementById('energyFill');
-    const energyText = document.getElementById('energyText');
 
-    // ---------- Состояние ----------
     let count = 0;
-    let energy = 500;
     let particles = [];
     let saveTimer = null;
-    let energyTimer = null;
 
-    // ============================================================
-    // 2. CANVAS (частицы)
-    // ============================================================
-
+    // ===== Canvas =====
     function resizeCanvas() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -404,40 +325,17 @@
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
-    // ============================================================
-    // 3. UI ЭНЕРГИИ
-    // ============================================================
-
-    function updateEnergyUI() {
-      const percent = (energy / 500) * 100;
-      energyFill.style.width = percent + '%';
-      energyText.textContent = energy + ' / 500';
-    }
-
-    // ============================================================
-    // 4. ЗАГРУЗКА ДАННЫХ ПРИ СТАРТЕ
-    // ============================================================
-
+    // ===== Загрузка счёта =====
     async function loadCount() {
       try {
-        // --- Счёт ---
         const res = await fetch(API_URL + '/api/me', {
           headers: { 'X-Init-Data': tg ? tg.initData : '' }
         });
         const data = await res.json();
         count = data.count || 0;
         counterEl.textContent = count;
-
-        // --- Энергия ---
-        const resE = await fetch(API_URL + '/api/energy', {
-          headers: { 'X-Init-Data': tg ? tg.initData : '' }
-        });
-        const dataE = await resE.json();
-        energy = dataE.energy !== undefined ? dataE.energy : 500;
-        updateEnergyUI();
       } catch (e) {
         console.error('Load error:', e);
-        // Фолбэк на CloudStorage
         if (tg && tg.CloudStorage) {
           tg.CloudStorage.getItem('tap_count', function(err, value) {
             if (!err && value) {
@@ -449,54 +347,29 @@
       }
     }
 
-    // ============================================================
-    // 5. СОХРАНЕНИЕ СЧЁТА (с дебаунсом)
-    // ============================================================
-
-    function saveCount(spent) {
+    // ===== Сохранение счёта =====
+    function saveCount() {
       clearTimeout(saveTimer);
       saveTimer = setTimeout(async () => {
-        // Локальный кэш
         if (tg && tg.CloudStorage) {
           tg.CloudStorage.setItem('tap_count', String(count));
         }
-
-        // На сервер
         try {
-          const res = await fetch(API_URL + '/api/count', {
+          await fetch(API_URL + '/api/count', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'X-Init-Data': tg ? tg.initData : ''
             },
-            body: JSON.stringify({ count: count, spent: spent })
+            body: JSON.stringify({ count: count })
           });
-          const data = await res.json();
-
-          // Обновляем энергию из ответа сервера
-          if (data.energy !== undefined) {
-            energy = data.energy;
-            updateEnergyUI();
-          }
-
-          // Если сервер сказал, что энергии нет
-          if (data.blocked === 'no_energy') {
-            count = data.count || count;
-            counterEl.textContent = count;
-            if (tg && tg.HapticFeedback) {
-              tg.HapticFeedback.notificationOccurred('warning');
-            }
-          }
         } catch (e) {
           console.error('Save failed:', e);
         }
       }, 200);
     }
 
-    // ============================================================
-    // 6. ЧАСТИЦЫ
-    // ============================================================
-
+    // ===== Частицы =====
     function spawnParticles(x, y) {
       const colors = ['#a855f7', '#6366f1', '#c084fc', '#818cf8', '#e0aaff'];
       for (let i = 0; i < 18; i++) {
@@ -539,45 +412,25 @@
     }
     animate();
 
-    // ============================================================
-    // 7. ОБРАБОТЧИК КЛИКА ПО КНОПКЕ
-    // ============================================================
-
+    // ===== Клик =====
     btn.addEventListener('click', () => {
-      // Нет энергии — не считаем
-      if (energy <= 0) {
-        if (tg && tg.HapticFeedback) {
-          tg.HapticFeedback.notificationOccurred('error');
-        }
-        return;
-      }
-
       count++;
-      energy--;
       counterEl.textContent = count;
-      updateEnergyUI();
 
-      // Анимация "прыжка"
       counterEl.classList.add('bump');
       setTimeout(() => counterEl.classList.remove('bump'), 150);
 
-      // Частицы
       const rect = btn.getBoundingClientRect();
       spawnParticles(rect.left + rect.width / 2, rect.top + rect.height / 2);
 
-      // Вибрация
       if (tg && tg.HapticFeedback) {
         tg.HapticFeedback.impactOccurred('medium');
       }
 
-      // Сохранить (1 потраченный клик)
-      saveCount(1);
+      saveCount();
     });
 
-    // ============================================================
-    // 8. ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК
-    // ============================================================
-
+    // ===== Вкладки =====
     document.querySelectorAll('.tab').forEach(tab => {
       tab.addEventListener('click', () => {
         const screenName = tab.dataset.screen;
@@ -598,10 +451,7 @@
       });
     });
 
-    // ============================================================
-    // 9. ЛИДЕРБОРД
-    // ============================================================
-
+    // ===== Лидерборд =====
     async function loadLeaderboard() {
       leaderboardList.innerHTML = '<div class="loading">Загрузка...</div>';
 
@@ -654,10 +504,7 @@
       return div.innerHTML;
     }
 
-    // ============================================================
-    // 10. НИЖНЯЯ НАВИГАЦИЯ (донат, канал, инфо)
-    // ============================================================
-
+    // ===== Нижняя навигация =====
     document.getElementById('donateBtn').addEventListener('click', () => {
       if (tg && tg.openLink) {
         tg.openLink(DONATE_URL);
@@ -682,44 +529,18 @@
           title: 'О боте',
           message: 'BasicClickBot — простой кликер с лидербордом.\n\n' +
                    '🎯 Жми кнопку, чтобы увеличить счёт\n' +
-                   '⚡ Энергия восстанавливается +5 за 5 секунд\n' +
                    '🏆 Соревнуйся с другими игроками\n' +
                    '💝 Поддержи проект донатом\n\n' +
                    'Версия 1.0',
           buttons: [{ type: 'close' }]
         });
       } else {
-        alert('BasicClickBot — простой кликер с лидербордом. Версия 1.0');
+        alert('BasicClickBot — кликер с лидербордом. Версия 1.0');
       }
       if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     });
 
-    // ============================================================
-    // 11. ПЕРИОДИЧЕСКАЯ СИНХРОНИЗАЦИЯ ЭНЕРГИИ
-    // ============================================================
-    // Раз в 5 секунд спрашиваем сервер актуальное значение энергии.
-    // Сервер сам посчитает восстановление и сохранит в БД.
-
-    energyTimer = setInterval(async () => {
-      if (!tg || !tg.initData) return;
-      try {
-        const res = await fetch(API_URL + '/api/energy', {
-          headers: { 'X-Init-Data': tg.initData }
-        });
-        const data = await res.json();
-        if (data.energy !== undefined) {
-          energy = data.energy;
-          updateEnergyUI();
-        }
-      } catch (e) {
-        // тихо игнорируем
-      }
-    }, 1000);
-
-    // ============================================================
-    // 12. СТАРТ
-    // ============================================================
-
+    // ===== Старт =====
     loadCount();
   </script>
 </body>
