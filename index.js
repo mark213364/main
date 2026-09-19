@@ -33,10 +33,10 @@ export default {
   const username = message.from.username || null;
 
   await env.DB.prepare(
-    INSERT INTO counters (chat_id, name, username, count) VALUES (?, ?, ?, 0)
+    `INSERT INTO counters (chat_id, name, username, count) VALUES (?, ?, ?, 0)
      ON CONFLICT(chat_id) DO UPDATE SET
        name = excluded.name,
-       username = excluded.username
+       username = excluded.username`
   ).bind(chatId, name, username).run();
 
   const result = await env.DB.prepare(
