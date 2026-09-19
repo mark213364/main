@@ -133,13 +133,13 @@ async function handleApi(request, env, path, corsHeaders) {
     let windowClicks = row?.clicks_in_window || 0;
     const lastClickAt = row?.last_click_at || 0;
 
-    if (now - lastClickAt > 2000) {
+    if (now - lastClickAt > 100) {
       windowClicks = 0;
     }
     windowClicks += delta;
 
     // Больше 8 кликов за 2 секунды — считаем ботом
-    if (windowClicks > 8) {
+    if (windowClicks > 4) {
       console.log(`Bot suspected: user ${userId}, windowClicks ${windowClicks}`);
       return json({ ok: true, blocked: 'rate' }, 200, corsHeaders);
     }
