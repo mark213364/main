@@ -195,13 +195,16 @@ async function handleApi(request, env, path, corsHeaders) {
     return json({ error: 'unauthorized' }, 401, corsHeaders);
   }
 
-  // GET /api/me
+    // ---------- GET /api/me ----------
   if (path === '/api/me' && request.method === 'GET') {
     const row = await env.DB.prepare(
-      'SELECT count FROM counters WHERE chat_id = ?'
+      'SELECT count, theme FROM counters WHERE chat_id = ?'
     ).bind(userId).first();
 
-    return json({ count: row?.count ?? 0 }, 200, corsHeaders);
+    return json({
+      count: row?.count ?? 0,
+      theme: row?.theme || 'classic',
+    }, 200, corsHeaders);
   }
 
   // POST /api/count
