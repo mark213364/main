@@ -6,6 +6,18 @@
   <title>TapllyBot</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
+        @keyframes shake {
+      0%   { transform: translateX(0)   rotate(0deg); }
+      20%  { transform: translateX(-4px) rotate(-3deg); }
+      40%  { transform: translateX(4px)  rotate(3deg); }
+      60%  { transform: translateX(-4px) rotate(-3deg); }
+      80%  { transform: translateX(4px)  rotate(3deg); }
+      100% { transform: translateX(0)   rotate(0deg); }
+    }
+
+    .btn.shake {
+      animation: shake 0.3s ease;
+    }
     * {
       margin: 0;
       padding: 0;
