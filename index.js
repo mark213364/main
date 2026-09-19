@@ -27,33 +27,33 @@ export default {
       const callbackQuery = update.callback_query;
 
       if (message && message.text === '/start') {
-  const chatId = message.chat.id;
-  const name = [message.from.first_name, message.from.last_name]
-    .filter(Boolean).join(' ') || 'Игрок';
-  const username = message.from.username || null;
+        const chatId = message.chat.id;
+        const name = [message.from.first_name, message.from.last_name]
+          .filter(Boolean).join(' ') || 'Игрок';
+        const username = message.from.username || null;
 
-  await env.DB.prepare(
-    `INSERT INTO counters (chat_id, name, username, count) VALUES (?, ?, ?, 0)
-     ON CONFLICT(chat_id) DO UPDATE SET
-       name = excluded.name,
-       username = excluded.username`
-  ).bind(chatId, name, username).run();
+        await env.DB.prepare(
+          `INSERT INTO counters (chat_id, name, username, count, energy, energy_updated_at)
+           VALUES (?, ?, ?, 0, 500, ?)
+           ON CONFLICT(chat_id) DO UPDATE SET
+             name = excluded.name,
+             username = excluded.username`
+        ).bind(chatId, name, username, Date.now()).run();
 
-  const result = await env.DB.prepare(
-    'SELECT count FROM counters WHERE chat_id = ?'
-  ).bind(chatId).first();
+        const result = await env.DB.prepare(
+          'SELECT count FROM counters WHERE chat_id = ?'
+        ).bind(chatId).first();
 
-  await sendMessage(env.BOT_TOKEN, chatId,
-    `👋 Привет, ${name}!\nТекущий счёт: *${result?.count ?? 0}*\n\nОткрой приложение 👇`,
-    {
-      inline_keyboard: [[
-        { text: '🚀 Открыть приложение', web_app: { url: 'https://mark213364.github.io/main/index.html' } }
-      ]]
-    }
-  );
-}
+        await sendMessage(env.BOT_TOKEN, chatId,
+          `👋 Привет, ${name}!\nТекущий счёт: *${result?.count ?? 0}*\n\nОткрой приложение 👇`,
+          {
+            inline_keyboard: [[
+              { text: '🚀 Открыть приложение', web_app: { url: 'https://mark213364.github.io/main/index.html' } }
+            ]]
+          }
+        );
+      }
 
-      // Команда админа: /reset <user_id>
       if (message && message.text && message.text.startsWith('/reset ')) {
         if (message.from.id !== ADMIN_ID) {
           await sendMessage(env.BOT_TOKEN, message.chat.id, '⛔ Нет доступа');
@@ -67,10 +67,10 @@ export default {
         }
 
         await env.DB.prepare(
-          'UPDATE counters SET count = 0, clicks_in_window = 0 WHERE chat_id = ?'
-        ).bind(targetId).run();
+          'UPDATE counters SET count = 0, energy = 500, energy_updated_at = ? WHERE chat_id = ?'
+        ).bind(Date.now(), targetId).run();
 
-        await sendMessage(env.BOT_TOKEN, message.chat.id, '✅ Счёт сброшен для ID ${targetId}');
+        await sendMessage(env.BOT_TOKEN, message.chat.id, `✅ Счёт и энергия сброшены для ID ${targetId}`);
       }
 
       return new Response('OK', { status: 200 });
@@ -101,7 +101,26 @@ async function handleApi(request, env, path, corsHeaders) {
     return json({ count: row?.count ?? 0 }, 200, corsHeaders);
   }
 
-  // POST /api/count — обновить мой счёт (с античит-проверкой)
+  // GET /api/energy — текущая энергия
+  if (path === '/api/energy' && request.method === 'GET') {
+    const row = await env.DB.prepare(
+      'SELECT energy, energy_updated_at FROM counters WHERE chat_id = ?'
+    ).bind(userId).first();
+
+    const now = Date.now();
+    let energy = row?.energy ?? 500;
+    const energyUpdatedAt = row?.energy_updated_at ?? now;
+
+    const elapsed = now - energyUpdatedAt;
+    const restored = Math.floor(elapsed / 2000) * 5;
+    if (restored > 0) {
+      energy = Math.min(500, energy + restored);
+    }
+
+    return json({ energy: energy }, 200, corsHeaders);
+  }
+
+  // POST /api/count — обновить счёт и потратить энергию
   if (path === '/api/count' && request.method === 'POST') {
     let body;
     try {
@@ -111,64 +130,63 @@ async function handleApi(request, env, path, corsHeaders) {
     }
 
     const count = parseInt(body.count, 10);
+    const spent = parseInt(body.spent, 10);
 
     if (!Number.isInteger(count) || count < 0) {
       return json({ error: 'invalid count' }, 400, corsHeaders);
     }
+    if (!Number.isInteger(spent) || spent < 0) {
+      return json({ error: 'invalid spent' }, 400, corsHeaders);
+    }
 
-    // Получаем текущее состояние пользователя
     const row = await env.DB.prepare(
-      'SELECT count, last_click_at, clicks_in_window FROM counters WHERE chat_id = ?'
+      'SELECT count, energy, energy_updated_at FROM counters WHERE chat_id = ?'
     ).bind(userId).first();
 
     const now = Date.now();
-    const currentCount = row?.count || 0;
-    const delta = count - currentCount;
-    // Проверка 1: дельта не может быть отрицательной или огромной
-    if (delta < 0 || delta > 10) {
-      return json({ ok: true, blocked: 'delta' }, 200, corsHeaders);
+    let energy = row?.energy ?? 500;
+    let energyUpdatedAt = row?.energy_updated_at ?? now;
+
+    // Восстанавливаем энергию: +5 за каждые 2 секунды
+    const elapsed = now - energyUpdatedAt;
+    const intervals = Math.floor(elapsed / 2000);
+    const restored = intervals * 5;
+    if (restored > 0) {
+      energy = Math.min(500, energy + restored);
+      energyUpdatedAt = energyUpdatedAt + intervals * 2000;
     }
 
-    // Проверка 2: окно кликов (2 секунды)
-    let windowClicks = row?.clicks_in_window || 0;
-    const lastClickAt = row?.last_click_at || 0;
-
-    if (now - lastClickAt > 20) {
-      windowClicks = 0;
-    }
-    windowClicks += delta;
-
-    // Больше 8 кликов за 2 секунды — считаем ботом
-    if (windowClicks > 4) {
-      console.log(`Bot suspected: user ${userId}, windowClicks ${windowClicks}`);
-      return json({ ok: true, blocked: 'rate' }, 200, corsHeaders);
+    // Проверка: хватает ли энергии
+    if (spent > energy) {
+      return json({
+        ok: true,
+        blocked: 'no_energy',
+        energy: energy,
+        count: row?.count ?? 0
+      }, 200, corsHeaders);
     }
 
-    // Проверка 3: слишком быстрый интервал между запросами
-    if (now - lastClickAt < 50 && delta > 0) {
-      return json({ ok: true, blocked: 'too_fast' }, 200, corsHeaders);
-    }
+    energy -= spent;
 
-    // Всё ок — сохраняем
-    await env.DB.prepare(`
-      UPDATE counters
-       SET count = ?, last_click_at = ?, clicks_in_window = ?
+    await env.DB.prepare(
+      `UPDATE counters
+       SET count = ?, energy = ?, energy_updated_at = ?
        WHERE chat_id = ?`
-    ).bind(count, now, windowClicks, userId).run();
+    ).bind(count, energy, energyUpdatedAt, userId).run();
 
-    return json({ ok: true }, 200, corsHeaders);
+    return json({ ok: true, energy: energy }, 200, corsHeaders);
   }
 
   // GET /api/top — топ-10
   if (path === '/api/top' && request.method === 'GET') {
     const result = await env.DB.prepare(
-  `SELECT chat_id AS user_id,
-          COALESCE(username, name, 'Игрок') AS display_name,
-          count
-   FROM counters
-   ORDER BY count DESC
-   LIMIT 10`
-   ).all();
+      `SELECT chat_id AS user_id,
+              COALESCE(username, name, 'Игрок') AS display_name,
+              count
+       FROM counters
+       ORDER BY count DESC
+       LIMIT 10`
+    ).all();
 
     return json({ players: result.results }, 200, corsHeaders);
   }
@@ -193,12 +211,13 @@ async function verifyInitData(initData, botToken) {
     if (!hash) return null;
     params.delete('hash');
 
-    const dataCheckString = [...params.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([k, v]) => `${k}=${v}`)
-      .join('\n');
+    const entries = [...params.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+    let dataCheckString = '';
+    for (let i = 0; i < entries.length; i++) {
+      if (i > 0) dataCheckString += '\n';
+      dataCheckString += entries[i][0] + '=' + entries[i][1];
+    }
 
-    // Проверка свежести initData (не старше 1 дня)
     const authDate = parseInt(params.get('auth_date'), 10);
     if (!authDate || Date.now() / 1000 - authDate > 86400) {
       return null;
@@ -206,7 +225,6 @@ async function verifyInitData(initData, botToken) {
 
     const encoder = new TextEncoder();
 
-    // secret_key = HMAC-SHA256("WebAppData", bot_token)
     const secretKey = await crypto.subtle.importKey(
       'raw',
       encoder.encode('WebAppData'),
@@ -221,7 +239,6 @@ async function verifyInitData(initData, botToken) {
       encoder.encode(botToken)
     );
 
-    // verify_key = derivedKey
     const verifyKey = await crypto.subtle.importKey(
       'raw',
       derivedKey,
@@ -230,7 +247,6 @@ async function verifyInitData(initData, botToken) {
       ['verify']
     );
 
-    // Преобразуем hex-хэш в байты
     const hashBytes = new Uint8Array(
       hash.match(/.{1,2}/g).map(b => parseInt(b, 16))
     );
