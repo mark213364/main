@@ -1,23 +1,15 @@
 // ============================================================
-// BASICCLICKBOT — Cloudflare Worker
-// ============================================================
-// Эндпоинты:
-//   POST /                   — webhook Telegram
-//   GET  /api/me             — мой счёт
-//   GET  /api/energy         — моя энергия
-//   POST /api/count          — сохранить счёт + списать энергию
-//   GET  /api/top            — топ-10 игроков
+// BASICCLICKBOT — Cloudflare Worker (без энергии)
 // ============================================================
 
-// ⚠️ ЗАМЕНИ на свой Telegram user_id (узнать: @userinfobot)
-const ADMIN_ID = 5946292761;
+// ⚠️ ЗАМЕНИ на свой Telegram user_id
+const ADMIN_ID = 123456789;
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const path = url.pathname;
 
-    // ---------- CORS ----------
     const corsHeaders = {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -28,12 +20,10 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
-    // ---------- API (мини-приложение) ----------
     if (path.startsWith('/api/')) {
       return handleApi(request, env, path, corsHeaders);
     }
 
-    // ---------- Telegram webhook ----------
     if (request.method !== 'POST') {
       return new Response('Bot is running!', { status: 200 });
     }
@@ -42,12 +32,10 @@ export default {
       const update = await request.json();
       const message = update.message;
 
-      // --- Команда /start ---
       if (message && message.text === '/start') {
         await handleStart(message, env);
       }
 
-      // --- Команда /reset <user_id> (только для админа) ---
       if (message && message.text && message.text.startsWith('/reset ')) {
         await handleReset(message, env);
       }
@@ -61,7 +49,7 @@ export default {
 };
 
 // ============================================================
-// ОБРАБОТЧИКИ TELEGRAM
+// TELEGRAM
 // ============================================================
 
 async function handleStart(message, env) {
@@ -71,12 +59,12 @@ async function handleStart(message, env) {
   const username = message.from.username || null;
 
   await env.DB.prepare(
-    `INSERT INTO counters (chat_id, name, username, count, energy, energy_updated_at)
-     VALUES (?, ?, ?, 0, 500, ?)
+    `INSERT INTO counters (chat_id, name, username, count)
+     VALUES (?, ?, ?, 0)
      ON CONFLICT(chat_id) DO UPDATE SET
        name = excluded.name,
        username = excluded.username`
-  ).bind(chatId, name, username, Date.now()).run();
+  ).bind(chatId, name, username).run();
 
   const result = await env.DB.prepare(
     'SELECT count FROM counters WHERE chat_id = ?'
@@ -86,8 +74,8 @@ async function handleStart(message, env) {
     `👋 Привет, ${name}!\nТекущий счёт: *${result?.count ?? 0}*\n\nОткрой приложение 👇`,
     {
       inline_keyboard: [[
-        // ⚠️ ЗАМЕНИ на URL своего мини-приложения (GitHub Pages)
-        { text: '🚀 Открыть приложение', web_app: { url: 'https://mark213364.github.io/main/index.html' } }
+        // ⚠️ ЗАМЕНИ на URL мини-приложения
+        { text: '🚀 Открыть приложение', web_app: { url: 'https://ТВОЙ_GITHUB_PAGES_URL/' } }
       ]]
     }
   );
@@ -101,23 +89,22 @@ async function handleReset(message, env) {
 
   const targetId = parseInt(message.text.split(' ')[1], 10);
   if (!targetId || isNaN(targetId)) {
-    await sendMessage(env.BOT_TOKEN, message.chat.id, '❌ Использование: /reset <user_id>');
+    await sendMessage(env.BOT_TOKEN, message.chat.id, '❌ /reset <user_id>');
     return;
   }
 
   await env.DB.prepare(
-    'UPDATE counters SET count = 0, energy = 500, energy_updated_at = ? WHERE chat_id = ?'
-  ).bind(Date.now(), targetId).run();
+    'UPDATE counters SET count = 0 WHERE chat_id = ?'
+  ).bind(targetId).run();
 
   await sendMessage(env.BOT_TOKEN, message.chat.id, `✅ Сброшено для ID ${targetId}`);
 }
 
 // ============================================================
-// API ДЛЯ МИНИ-ПРИЛОЖЕНИЯ
+// API
 // ============================================================
 
 async function handleApi(request, env, path, corsHeaders) {
-  // ---------- Проверка подписи Telegram ----------
   const initData = request.headers.get('X-Init-Data');
   const userId = await verifyInitData(initData, env.BOT_TOKEN);
 
@@ -125,7 +112,7 @@ async function handleApi(request, env, path, corsHeaders) {
     return json({ error: 'unauthorized' }, 401, corsHeaders);
   }
 
-  // ---------- GET /api/me ----------
+  // GET /api/me
   if (path === '/api/me' && request.method === 'GET') {
     const row = await env.DB.prepare(
       'SELECT count FROM counters WHERE chat_id = ?'
@@ -134,36 +121,7 @@ async function handleApi(request, env, path, corsHeaders) {
     return json({ count: row?.count ?? 0 }, 200, corsHeaders);
   }
 
-  // ---------- GET /api/energy ----------
-  if (path === '/api/energy' && request.method === 'GET') {
-    const row = await env.DB.prepare(
-      'SELECT energy, energy_updated_at FROM counters WHERE chat_id = ?'
-    ).bind(userId).first();
-
-    const now = Date.now();
-    let energy = row?.energy ?? 500;
-    let energyUpdatedAt = row?.energy_updated_at ?? now;
-
-    // Восстановление: +5 за каждые 5 секунд
-        const elapsed = now - energyUpdatedAt;
-    const intervals = Math.floor(elapsed / 1000);
-    const restored = intervals * 1;
-
-    if (restored > 0) {
-      energy = Math.min(500, energy + restored);
-      energyUpdatedAt = energyUpdatedAt + intervals * 1000;
-      await env.DB.prepare(
-        'UPDATE counters SET energy = ?, energy_updated_at = ? WHERE chat_id = ?'
-      ).bind(energy, energyUpdatedAt, userId).run();
-    }
-
-    // Возвращаем ВОЗМОЖНО большее значение — с учётом "недобранных" миллисекунд
-    const remainder = elapsed - intervals * 1000; // сколько мс "лишних"
-    const preview = Math.min(500, energy + (remainder >= 1000 ? 1 : 0));
-    return json({ energy: preview }, 200, corsHeaders);
-  }
-
-  // ---------- POST /api/count ----------
+  // POST /api/count
   if (path === '/api/count' && request.method === 'POST') {
     let body;
     try {
@@ -173,55 +131,19 @@ async function handleApi(request, env, path, corsHeaders) {
     }
 
     const count = parseInt(body.count, 10);
-    const spent = parseInt(body.spent, 10) || 1;
 
     if (!Number.isInteger(count) || count < 0) {
       return json({ error: 'invalid count' }, 400, corsHeaders);
     }
 
-    const row = await env.DB.prepare(
-      'SELECT count, energy, energy_updated_at FROM counters WHERE chat_id = ?'
-    ).bind(userId).first();
-
-    const now = Date.now();
-    let energy = row?.energy ?? 500;
-    let energyUpdatedAt = row?.energy_updated_at ?? now;
-
-    // Сначала восстановим то, что накопилось
-    const elapsed = now - energyUpdatedAt;
-    const intervals = Math.floor(elapsed / 1000);
-    const restored = intervals * 1;
-
-    if (restored > 0) {
-      energy = Math.min(500, energy + restored);
-      energyUpdatedAt = energyUpdatedAt + intervals * 1000;
-    }
-
-    // Проверка: хватает ли энергии
-    if (spent > energy) {
-      return json({
-        ok: true,
-        blocked: 'no_energy',
-        energy: energy,
-        count: row?.count ?? 0
-      }, 200, corsHeaders);
-    }
-
-    // Списываем энергию
-    energy -= spent;
-
-    // ⚠️ ВАЖНО: НЕ трогаем energy_updated_at здесь!
-    // Таймер восстановления продолжает идти от последнего восстановления.
     await env.DB.prepare(
-      `UPDATE counters
-       SET count = ?, energy = ?, energy_updated_at = ?
-       WHERE chat_id = ?`
-    ).bind(count, energy, energyUpdatedAt, userId).run();
+      'UPDATE counters SET count = ? WHERE chat_id = ?'
+    ).bind(count, userId).run();
 
-    return json({ ok: true, energy: energy }, 200, corsHeaders);
+    return json({ ok: true }, 200, corsHeaders);
   }
 
-  // ---------- GET /api/top ----------
+  // GET /api/top
   if (path === '/api/top' && request.method === 'GET') {
     const result = await env.DB.prepare(
       `SELECT chat_id AS user_id,
@@ -262,7 +184,6 @@ async function sendMessage(token, chatId, text, keyboard) {
   });
 }
 
-// Проверка подписи Telegram initData через Web Crypto API
 async function verifyInitData(initData, botToken) {
   if (!initData) return null;
   try {
@@ -271,7 +192,6 @@ async function verifyInitData(initData, botToken) {
     if (!hash) return null;
     params.delete('hash');
 
-    // Собираем data-check-string
     const entries = [...params.entries()].sort((a, b) => a[0].localeCompare(b[0]));
     let dataCheckString = '';
     for (let i = 0; i < entries.length; i++) {
@@ -279,7 +199,6 @@ async function verifyInitData(initData, botToken) {
       dataCheckString += entries[i][0] + '=' + entries[i][1];
     }
 
-    // Проверка свежести (24 часа)
     const authDate = parseInt(params.get('auth_date'), 10);
     if (!authDate || Date.now() / 1000 - authDate > 86400) {
       return null;
@@ -287,7 +206,6 @@ async function verifyInitData(initData, botToken) {
 
     const encoder = new TextEncoder();
 
-    // secret_key = HMAC-SHA256("WebAppData", bot_token)
     const secretKey = await crypto.subtle.importKey(
       'raw',
       encoder.encode('WebAppData'),
@@ -302,7 +220,6 @@ async function verifyInitData(initData, botToken) {
       encoder.encode(botToken)
     );
 
-    // verify_key
     const verifyKey = await crypto.subtle.importKey(
       'raw',
       derivedKey,
@@ -311,7 +228,6 @@ async function verifyInitData(initData, botToken) {
       ['verify']
     );
 
-    // hex -> bytes
     const hashBytes = new Uint8Array(
       hash.match(/.{1,2}/g).map(b => parseInt(b, 16))
     );
