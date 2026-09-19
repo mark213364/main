@@ -1,0 +1,8 @@
+name = "tapllybot"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+[[d1_databases]]
+binding = "tapllybot"
+database_name = "tapllybot"
+database_id = "c8cf6101-b8e2-4f1f-bc9b-f1e71c1dfeaa"
