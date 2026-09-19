@@ -3,7 +3,6 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
 
-    // CORS для мини-приложения
     const corsHeaders = {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -14,12 +13,10 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
-    // ===== API для мини-приложения =====
     if (path.startsWith('/api/')) {
       return handleApi(request, env, path, corsHeaders);
     }
 
-    // ===== Webhook Telegram =====
     if (request.method !== 'POST') {
       return new Response('Bot is running!', { status: 200 });
     }
@@ -35,8 +32,8 @@ export default {
           .filter(Boolean).join(' ') || 'Игрок';
 
         await env.DB.prepare(
-          `INSERT INTO counters (chat_id, name, count) VALUES (?, ?, 0)
-           ON CONFLICT(chat_id) DO UPDATE SET name = excluded.name`
+          `INSERT INTO counters (chat_id, name, count) VALUES (?, ?, 0)`
+           ON CONFLICT(chat_id) DO UPDATE SET name = excluded.name
         ).bind(chatId, name).run();
 
         const result = await env.DB.prepare(
@@ -44,13 +41,33 @@ export default {
         ).bind(chatId).first();
 
         await sendMessage(env.BOT_TOKEN, chatId,
-          `👋 Привет, заходи в игру \n\nВыбери действие 👇`,
+          `👋 Привет, ${name}!\nТекущий счёт: *${result?.count ?? 0}*\n\nОткрой приложение 👇`,
           {
             inline_keyboard: [[
-              { text: '🚀 Открыть приложение', web_app: { url: 'https://mark213364.github.io/main/index.html' }}
+              { text: '🚀 Открыть приложение', web_app: { url: 'https://ТВОЙ_GITHUB_PAGES_URL/' } }
             ]]
           }
         );
+      }
+
+      // Команда админа: /reset <user_id>
+      if (message && message.text && message.text.startsWith('/reset ')) {
+        if (message.from.id !== ADMIN_ID) {
+          await sendMessage(env.BOT_TOKEN, message.chat.id, '⛔ Нет доступа');
+          return new Response('OK', { status: 200 });
+        }
+
+        const targetId = parseInt(message.text.split(' ')[1], 10);
+        if (!targetId || isNaN(targetId)) {
+          await sendMessage(env.BOT_TOKEN, message.chat.id, '❌ Использование: /reset <user_id>');
+          return new Response('OK', { status: 200 });
+        }
+
+        await env.DB.prepare(
+          'UPDATE counters SET count = 0, clicks_in_window = 0 WHERE chat_id = ?'
+        ).bind(targetId).run();
+
+        await sendMessage(env.BOT_TOKEN, message.chat.id, ✅ Счёт сброшен для ID ${targetId});
       }
 
       return new Response('OK', { status: 200 });
@@ -61,10 +78,12 @@ export default {
   }
 };
 
+const ADMIN_ID = 5946292761; // ⚠️ ЗАМЕНИ на свой user_id
+
 // ===== API =====
 async function handleApi(request, env, path, corsHeaders) {
   const initData = request.headers.get('X-Init-Data');
-  const userId = verifyInitData(initData, env.BOT_TOKEN);
+  const userId = await verifyInitData(initData, env.BOT_TOKEN);
 
   if (!userId) {
     return json({ error: 'unauthorized' }, 401, corsHeaders);
@@ -79,19 +98,60 @@ async function handleApi(request, env, path, corsHeaders) {
     return json({ count: row?.count ?? 0 }, 200, corsHeaders);
   }
 
-  // POST /api/count — обновить мой счёт
+  // POST /api/count — обновить мой счёт (с античит-проверкой)
   if (path === '/api/count' && request.method === 'POST') {
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return json({ error: 'invalid body' }, 400, corsHeaders);
+    }
+
     const count = parseInt(body.count, 10);
 
     if (!Number.isInteger(count) || count < 0) {
       return json({ error: 'invalid count' }, 400, corsHeaders);
     }
 
+    // Получаем текущее состояние пользователя
+    const row = await env.DB.prepare(
+      'SELECT count, last_click_at, clicks_in_window FROM counters WHERE chat_id = ?'
+    ).bind(userId).first();
+
+    const now = Date.now();
+    const currentCount = row?.count || 0;
+    const delta = count - currentCount;
+    // Проверка 1: дельта не может быть отрицательной или огромной
+    if (delta < 0 || delta > 10) {
+      return json({ ok: true, blocked: 'delta' }, 200, corsHeaders);
+    }
+
+    // Проверка 2: окно кликов (2 секунды)
+    let windowClicks = row?.clicks_in_window || 0;
+    const lastClickAt = row?.last_click_at || 0;
+
+    if (now - lastClickAt > 2000) {
+      windowClicks = 0;
+    }
+    windowClicks += delta;
+
+    // Больше 8 кликов за 2 секунды — считаем ботом
+    if (windowClicks > 8) {
+      console.log(Bot suspected: user ${userId}, windowClicks ${windowClicks});
+      return json({ ok: true, blocked: 'rate' }, 200, corsHeaders);
+    }
+
+    // Проверка 3: слишком быстрый интервал между запросами
+    if (now - lastClickAt < 50 && delta > 0) {
+      return json({ ok: true, blocked: 'too_fast' }, 200, corsHeaders);
+    }
+
+    // Всё ок — сохраняем
     await env.DB.prepare(
-      `INSERT INTO counters (chat_id, name, count) VALUES (?, 'Игрок', ?)
-       ON CONFLICT(chat_id) DO UPDATE SET count = excluded.count`
-    ).bind(userId, count).run();
+      UPDATE counters
+       SET count = ?, last_click_at = ?, clicks_in_window = ?
+       WHERE chat_id = ?
+    ).bind(count, now, windowClicks, userId).run();
 
     return json({ ok: true }, 200, corsHeaders);
   }
@@ -116,8 +176,8 @@ function json(data, status, corsHeaders) {
   });
 }
 
-// Проверка подписи Telegram initData
-function verifyInitData(initData, botToken) {
+// Полная проверка подписи Telegram initData через Web Crypto API
+async function verifyInitData(initData, botToken) {
   if (!initData) return null;
   try {
     const params = new URLSearchParams(initData);
@@ -127,14 +187,59 @@ function verifyInitData(initData, botToken) {
 
     const dataCheckString = [...params.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([k, v]) => `${k}=${v}`)
+      .map(([k, v]) => ${k}=${v})
       .join('\n');
-    // В Workers нет crypto.createHmac — используем Web Crypto API
-    // Но для простоты пока пропускаем проверку подписи.
-    // В продакшене обязательно проверяй!
+
+    // Проверка свежести initData (не старше 1 дня)
+    const authDate = parseInt(params.get('auth_date'), 10);
+    if (!authDate || Date.now() / 1000 - authDate > 86400) {
+      return null;
+    }
+
+    const encoder = new TextEncoder();
+
+    // secret_key = HMAC-SHA256("WebAppData", bot_token)
+    const secretKey = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode('WebAppData'),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+
+    const derivedKey = await crypto.subtle.sign(
+      'HMAC',
+      secretKey,
+      encoder.encode(botToken)
+    );
+
+    // verify_key = derivedKey
+    const verifyKey = await crypto.subtle.importKey(
+      'raw',
+      derivedKey,
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['verify']
+    );
+
+    // Преобразуем hex-хэш в байты
+    const hashBytes = new Uint8Array(
+      hash.match(/.{1,2}/g).map(b => parseInt(b, 16))
+    );
+
+    const isValid = await crypto.subtle.verify(
+      'HMAC',
+      verifyKey,
+      hashBytes,
+      encoder.encode(dataCheckString)
+    );
+
+    if (!isValid) return null;
+
     const user = JSON.parse(params.get('user') || '{}');
     return user.id || null;
   } catch (e) {
+    console.error('verifyInitData error:', e.message);
     return null;
   }
 }
