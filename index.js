@@ -228,7 +228,32 @@ async function handleApi(request, env, path, corsHeaders) {
 
     return json({ ok: true }, 200, corsHeaders);
   }
+  
+  // ---------- GET /api/themes ----------
+  if (path === '/api/themes' && request.method === 'GET') {
+    const row = await env.DB.prepare(
+      'SELECT theme FROM counters WHERE chat_id = ?'
+    ).bind(userId).first();
 
+    const currentTheme = row?.theme || 'classic';
+
+    const owned = await env.DB.prepare(
+      `SELECT item_id FROM purchases
+       WHERE chat_id = ? AND item_id LIKE 'theme_%'`
+    ).bind(userId).all();
+
+    const ownedIds = owned.results.map(o => o.item_id.replace('theme_', ''));
+    ownedIds.push('classic'); // классика бесплатна
+
+    const themes = Object.values(THEMES).map(t => ({
+      ...t,
+      owned: ownedIds.includes(t.id),
+      active: t.id === currentTheme,
+    }));
+
+    return json({ themes: themes, current: currentTheme }, 200, corsHeaders);
+  }
+  
   // GET /api/top
   if (path === '/api/top' && request.method === 'GET') {
     const result = await env.DB.prepare(
