@@ -817,7 +817,7 @@
         tapBtnEl.style.background = theme.btn;
         tapBtnEl.style.boxShadow = '0 10px 40px ' + theme.shadow;
       }
-    }
+    
 
     // Хелпер: #a855f7 → {r:168, g:85, b:247}
     function hexToRgb(hex) {
@@ -892,7 +892,7 @@
             btnText = 'Купить';
             btnDisabled = false;
           }
-
+        }
           html += '<div class="shop-item ' + isActive + '">';
           html += '<div class="shop-item-icon">' + t.icon + '</div>';
           html += '<div class="shop-item-info">';
@@ -925,7 +925,7 @@
         shopList.innerHTML = '<div class="empty">Ошибка загрузки 😢</div>';
         console.error(e);
       }
-    }
+    
 
     async function buyTheme(themeId) {
       try {
