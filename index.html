@@ -404,7 +404,8 @@
 
           const isMe = p.user_id === myId ? 'me' : '';
           const rankDisplay = i < 3 ? medals[i] : String(i + 1);
-          const name = escapeHtml(p.name || 'Игрок');
+          const rawName = p.display_name || 'Игрок';
+          const name = escapeHtml(rawName.charAt(0) === '@' ? rawName : '@' + rawName);
 
           html += '<div class="leaderboard-item ' + isMe + '">';
           html += '<div class="rank ' + rankClass + '">' + rankDisplay + '</div>';
