@@ -88,6 +88,22 @@ const THEMES = {
     animated: true,
   },
 };
+
+// ============================================================
+// БОНУСЫ
+// ============================================================
+const BONUSES = {
+  multiplier2: {
+    id: 'multiplier2',
+    name: 'x2 кликов',
+    icon: '⚡',
+    desc: 'Удваивает клики на 1.5 минут',
+    price: 600,
+    duration: 60 * 1500,
+    multiplier: 2,
+  },
+};
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -227,6 +243,42 @@ async function handleApi(request, env, path, corsHeaders) {
     ).bind(count, userId).run();
 
     return json({ ok: true }, 200, corsHeaders);
+  }
+
+    // ---------- GET /api/bonuses ----------
+  if (path === '/api/bonuses' && request.method === 'GET') {
+    const now = Date.now();
+
+    const purchases = await env.DB.prepare(
+      `SELECT item_id, expires_at FROM purchases
+       WHERE chat_id = ?
+         AND expires_at IS NOT NULL
+         AND expires_at > ?`
+    ).bind(userId, now).all();
+
+    let multiplier = 1;
+    let activeUntil = 0;
+
+    purchases.results.forEach(p => {
+      if (p.item_id === 'multiplier2') {
+        multiplier = Math.max(multiplier, 2);
+        activeUntil = Math.max(activeUntil, p.expires_at);
+      }
+    });
+
+    const bonuses = Object.values(BONUSES).map(b => {
+      const active = purchases.results.some(p => p.item_id === b.id);
+      return {
+        ...b,
+        active: active,
+      };
+    });
+
+    return json({
+      bonuses: bonuses,
+      multiplier: multiplier,
+      activeUntil: activeUntil,
+    }, 200, corsHeaders);
   }
   
   // ---------- GET /api/themes ----------
