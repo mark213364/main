@@ -140,7 +140,7 @@ async function handleApi(request, env, path, corsHeaders) {
 
     // Больше 8 кликов за 2 секунды — считаем ботом
     if (windowClicks > 8) {
-      console.log(Bot suspected: user ${userId}, windowClicks ${windowClicks});
+      console.log(`Bot suspected: user ${userId}, windowClicks ${windowClicks}`);
       return json({ ok: true, blocked: 'rate' }, 200, corsHeaders);
     }
 
@@ -150,10 +150,10 @@ async function handleApi(request, env, path, corsHeaders) {
     }
 
     // Всё ок — сохраняем
-    await env.DB.prepare(
+    await env.DB.prepare(`
       UPDATE counters
        SET count = ?, last_click_at = ?, clicks_in_window = ?
-       WHERE chat_id = ?
+       WHERE chat_id = ?`
     ).bind(count, now, windowClicks, userId).run();
 
     return json({ ok: true }, 200, corsHeaders);
