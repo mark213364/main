@@ -12,6 +12,18 @@
       box-sizing: border-box;
       -webkit-tap-highlight-color: transparent;
     }
+        :root {
+      --accent-color: #a855f7;
+      --accent-color-soft: rgba(168, 85, 247, 0.3);
+      --accent-color-border: rgba(168, 85, 247, 0.3);
+      --accent-color-glow: rgba(168, 85, 247, 0.6);
+      --accent-color-bg: rgba(168, 85, 247, 0.15);
+      --btn-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+      --btn-shadow: rgba(168, 85, 247, 0.5);
+      --panel-bg: rgba(10, 14, 39, 0.75);
+      --panel-border: rgba(168, 85, 247, 0.3);
+      --text-color: #ffffff;
+    }
 
     html { height: 100%; }
 
@@ -43,10 +55,10 @@
       left: 0;
       right: 0;
       display: flex;
-      background: rgba(10, 14, 39, 0.75);
+      background: var(--panel-bg);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
-      border-bottom: 1px solid rgba(168, 85, 247, 0.3);
+      border-bottom: 1px solid var(--panel-border);
       z-index: 100;
     }
 
@@ -73,7 +85,7 @@
       left: 20%;
       right: 20%;
       height: 3px;
-      background: linear-gradient(90deg, #6366f1, #a855f7);
+      background: var(--btn-gradient);
       border-radius: 3px 3px 0 0;
     }
 
@@ -121,8 +133,8 @@
 
     .shop-subtab.active {
       color: #ffffff;
-      background: var(--btn-gradient, linear-gradient(135deg, #6366f1, #a855f7));
-      box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
+      background: var(--btn-gradient);
+      box-shadow: 0 4px 15px var(--accent-color-soft);
     }
 
     .shop-content {
@@ -134,7 +146,7 @@
       font-size: 20px;
       font-weight: 700;
       margin-bottom: 16px;
-      color: var(--accent-color, #a855f7);
+      color: var(--accent-color);
     }
 
     .shop-list {
@@ -156,7 +168,7 @@
       justify-content: space-between;
       padding: 16px 12px;
       background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(168, 85, 247, 0.2);
+      border: 1px solid var(--accent-color-border);
       border-radius: 18px;
       aspect-ratio: 1 / 1;
       box-sizing: border-box;
@@ -171,9 +183,9 @@
     }
 
     .shop-item-active {
-      background: rgba(168, 85, 247, 0.15);
-      border-color: rgba(168, 85, 247, 0.6);
-      box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+      background: var(--accent-color-bg);
+      border-color: var(--accent-color-glow);
+      box-shadow: 0 0 20px var(--accent-color-soft);
     }
 
     .shop-item-icon {
@@ -247,7 +259,7 @@
       position: absolute;
       top: 8px;
       right: 8px;
-      background: var(--accent-color, #a855f7);
+      background: var(--accent-color);
       color: #ffffff;
       width: 22px;
       height: 22px;
@@ -280,7 +292,7 @@
       font-weight: 700;
       line-height: 1;
       color: #ffffff;
-      text-shadow: 0 0 30px rgba(168, 85, 247, 0.6);
+      text-shadow: 0 0 30px var(--accent-color-glow);
       transition: transform 0.15s ease;
       margin-bottom: 40px;
     }
@@ -387,10 +399,10 @@
       display: flex;
       justify-content: space-around;
       align-items: center;
-      background: rgba(10, 14, 39, 0.85);
+      background: var(--panel-bg);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
-      border-top: 1px solid rgba(168, 85, 247, 0.3);
+      border-top: 1px solid var(--panel-border);
       padding: 10px 0;
       padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
       z-index: 200;
@@ -414,7 +426,7 @@
     }
 
     .nav-btn:active {
-      background: rgba(168, 85, 247, 0.15);
+      background: var(--accent-color-bg);
       color: #ffffff;
     }
 
