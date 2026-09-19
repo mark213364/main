@@ -344,7 +344,7 @@
     }
 
     // ⚠️ ЗАМЕНИ на URL твоего воркера
-    const API_URL = 'https://basicclickbot.g3316464.workers.dev';
+    const API_URL = 'https://basicclickbot.g3316464.workers.dev/';
 
     const counterEl = document.getElementById('counter');
     const btn = document.getElementById('tapBtn');
@@ -408,7 +408,7 @@
           tg.CloudStorage.setItem('tap_count', String(count));
         }
         try {
-          const res = await fetch(API_URL + '/api/count', {
+          const res = await fetch(API_URL + 'api/count', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -616,7 +616,7 @@
       }
       if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     });
-    loadcount()
+    loadCount();
   </script>
 </body>
 </html>
