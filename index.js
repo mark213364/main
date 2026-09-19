@@ -27,28 +27,31 @@ export default {
       const callbackQuery = update.callback_query;
 
       if (message && message.text === '/start') {
-        const chatId = message.chat.id;
-        const name = [message.from.first_name, message.from.last_name]
-          .filter(Boolean).join(' ') || 'Игрок';
+  const chatId = message.chat.id;
+  const name = [message.from.first_name, message.from.last_name]
+    .filter(Boolean).join(' ') || 'Игрок';
+  const username = message.from.username || null;
 
-        await env.DB.prepare(
-          `INSERT INTO counters (chat_id, name, count) VALUES (?, ?, 0)
-           ON CONFLICT(chat_id) DO UPDATE SET name = excluded.name
-        `).bind(chatId, name).run();
+  await env.DB.prepare(
+    INSERT INTO counters (chat_id, name, username, count) VALUES (?, ?, ?, 0)
+     ON CONFLICT(chat_id) DO UPDATE SET
+       name = excluded.name,
+       username = excluded.username
+  ).bind(chatId, name, username).run();
 
-        const result = await env.DB.prepare(
-          'SELECT count FROM counters WHERE chat_id = ?'
-        ).bind(chatId).first();
+  const result = await env.DB.prepare(
+    'SELECT count FROM counters WHERE chat_id = ?'
+  ).bind(chatId).first();
 
-        await sendMessage(env.BOT_TOKEN, chatId,
-          `👋 Привет, ${name}!\nТекущий счёт: *${result?.count ?? 0}*\n\nОткрой приложение 👇`,
-          {
-            inline_keyboard: [[
-              { text: '🚀 Открыть приложение', web_app: { url: 'https://ТВОЙ_GITHUB_PAGES_URL/' } }
-            ]]
-          }
-        );
-      }
+  await sendMessage(env.BOT_TOKEN, chatId,
+    `👋 Привет, ${name}!\nТекущий счёт: *${result?.count ?? 0}*\n\nОткрой приложение 👇`,
+    {
+      inline_keyboard: [[
+        { text: '🚀 Открыть приложение', web_app: { url: 'https://mark213364.github.io/main/index.html' } }
+      ]]
+    }
+  );
+}
 
       // Команда админа: /reset <user_id>
       if (message && message.text && message.text.startsWith('/reset ')) {
@@ -67,7 +70,7 @@ export default {
           'UPDATE counters SET count = 0, clicks_in_window = 0 WHERE chat_id = ?'
         ).bind(targetId).run();
 
-        await sendMessage(env.BOT_TOKEN, message.chat.id, ✅ Счёт сброшен для ID ${targetId});
+        await sendMessage(env.BOT_TOKEN, message.chat.id, '✅ Счёт сброшен для ID ${targetId}');
       }
 
       return new Response('OK', { status: 200 });
