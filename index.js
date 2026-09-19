@@ -253,6 +253,110 @@ async function handleApi(request, env, path, corsHeaders) {
 
     return json({ themes: themes, current: currentTheme }, 200, corsHeaders);
   }
+
+  // ---------- POST /api/themes/buy ----------
+  if (path === '/api/themes/buy' && request.method === 'POST') {
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return json({ error: 'invalid body' }, 400, corsHeaders);
+    }
+
+    const themeId = body.themeId;
+    const theme = THEMES[themeId];
+
+    if (!theme) {
+      return json({ error: 'theme not found' }, 404, corsHeaders);
+    }
+
+    if (themeId === 'classic') {
+      return json({ error: 'free_theme' }, 400, corsHeaders);
+    }
+
+    // Проверка: уже куплено?
+    const existing = await env.DB.prepare(
+      `SELECT id FROM purchases
+       WHERE chat_id = ? AND item_id = ?`
+    ).bind(userId, 'theme_' + themeId).first();
+
+    if (existing) {
+      // Уже куплено — просто активируем
+      await env.DB.prepare(
+        'UPDATE counters SET theme = ? WHERE chat_id = ?'
+      ).bind(themeId, userId).run();
+
+      return json({ ok: true, activated: true, theme: theme }, 200, corsHeaders);
+    }
+
+    // Получаем счёт
+    const row = await env.DB.prepare(
+      'SELECT count FROM counters WHERE chat_id = ?'
+    ).bind(userId).first();
+
+    const currentCount = row?.count ?? 0;
+
+    if (currentCount < theme.price) {
+      return json({
+        error: 'not_enough',
+        need: theme.price,
+        have: currentCount
+      }, 400, corsHeaders);
+    }
+
+    // Списываем и записываем покупку + сразу активируем
+    const newCount = currentCount - theme.price;
+
+    await env.DB.prepare(
+      'UPDATE counters SET count = ?, theme = ? WHERE chat_id = ?'
+    ).bind(newCount, themeId, userId).run();
+
+    await env.DB.prepare(
+      `INSERT INTO purchases (chat_id, item_id, expires_at, created_at)
+       VALUES (?, ?, NULL, ?)`
+    ).bind(userId, 'theme_' + themeId, Date.now()).run();
+
+    return json({
+      ok: true,
+      newCount: newCount,
+      theme: theme,
+    }, 200, corsHeaders);
+  }
+
+  // ---------- POST /api/themes/activate ----------
+  if (path === '/api/themes/activate' && request.method === 'POST') {
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return json({ error: 'invalid body' }, 400, corsHeaders);
+    }
+
+    const themeId = body.themeId;
+    const theme = THEMES[themeId];
+
+    if (!theme) {
+      return json({ error: 'theme not found' }, 404, corsHeaders);
+    }
+
+    // Проверка: куплено ли?
+    if (themeId !== 'classic') {
+      const existing = await env.DB.prepare(
+        `SELECT id FROM purchases
+         WHERE chat_id = ? AND item_id = ?`
+      ).bind(userId, 'theme_' + themeId).first();
+
+      if (!existing) {
+        return json({ error: 'not_owned' }, 400, corsHeaders);
+      }
+    }
+
+    await env.DB.prepare(
+      'UPDATE counters SET theme = ? WHERE chat_id = ?'
+    ).bind(themeId, userId).run();
+
+    return json({ ok: true, theme: theme }, 200, corsHeaders);
+  }
   
   // GET /api/top
   if (path === '/api/top' && request.method === 'GET') {
