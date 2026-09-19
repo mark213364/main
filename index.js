@@ -166,13 +166,16 @@ async function handleApi(request, env, path, corsHeaders) {
       }, 200, corsHeaders);
     }
 
-    energy -= spent;
+        energy -= spent;
+
+    // Сбрасываем таймер восстановления — он начнётся заново
+    const newEnergyUpdatedAt = now;
 
     await env.DB.prepare(
       `UPDATE counters
        SET count = ?, energy = ?, energy_updated_at = ?
        WHERE chat_id = ?`
-    ).bind(count, energy, energyUpdatedAt, userId).run();
+    ).bind(count, energy, newEnergyUpdatedAt, userId).run();
 
     return json({ ok: true, energy: energy }, 200, corsHeaders);
   }
