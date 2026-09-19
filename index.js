@@ -195,7 +195,7 @@ async function verifyInitData(initData, botToken) {
 
     const dataCheckString = [...params.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(`([k, v]) => ${k}=${v}`)
+      .map(([k, v]) => `${k}=${v}`)
       .join('\n');
 
     // Проверка свежести initData (не старше 1 дня)
