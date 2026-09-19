@@ -133,7 +133,7 @@ async function handleApi(request, env, path, corsHeaders) {
     let windowClicks = row?.clicks_in_window || 0;
     const lastClickAt = row?.last_click_at || 0;
 
-    if (now - lastClickAt > 100) {
+    if (now - lastClickAt > 20) {
       windowClicks = 0;
     }
     windowClicks += delta;
