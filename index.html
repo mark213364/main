@@ -95,6 +95,40 @@
       padding: 16px;
     }
 
+    /* Под-вкладки внутри магазина */
+    .shop-subtabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 14px;
+      padding: 4px;
+    }
+
+    .shop-subtab {
+      flex: 1;
+      padding: 10px 12px;
+      background: none;
+      border: none;
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      border-radius: 10px;
+      transition: color 0.2s ease, background 0.2s ease;
+    }
+
+    .shop-subtab.active {
+      color: #ffffff;
+      background: var(--btn-gradient, linear-gradient(135deg, #6366f1, #a855f7));
+      box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
+    }
+
+    .shop-content {
+      /* контейнер для списка товаров */
+    }
+
     .shop-title {
       text-align: center;
       font-size: 20px;
@@ -399,10 +433,22 @@
     <button class="tab" data-screen="leaderboard">🏆 Рейтинг</button>
   </div>
 
-    <div class="screen" id="screen-shop">
-    <div class="shop-title">🛒 Магазин</div>
-    <div class="shop-list" id="shopList">
-      <div class="empty">Скоро тут появятся товары 😊</div>
+      <div class="screen" id="screen-shop">
+    <div class="shop-subtabs">
+      <button class="shop-subtab active" data-subtab="themes">🎨 Темы</button>
+      <button class="shop-subtab" data-subtab="bonuses">🎁 Бонусы</button>
+    </div>
+
+    <div class="shop-content" id="shopThemes">
+      <div class="shop-list" id="shopList">
+        <div class="loading">Загрузка...</div>
+      </div>
+    </div>
+
+    <div class="shop-content" id="shopBonuses" style="display: none;">
+      <div class="shop-list" id="bonusesList">
+        <div class="empty">Скоро тут появятся бонусы 🎁</div>
+      </div>
     </div>
   </div>
   
@@ -885,6 +931,41 @@
       }
     `;
     document.head.appendChild(style);
+        // ============================================================
+    // ПОД-ВКЛАДКИ МАГАЗИНА
+    // ============================================================
+
+    document.querySelectorAll('.shop-subtab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const subtab = tab.dataset.subtab;
+
+        document.querySelectorAll('.shop-subtab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+
+        document.getElementById('shopThemes').style.display = 'none';
+        document.getElementById('shopBonuses').style.display = 'none';
+
+        if (subtab === 'themes') {
+          document.getElementById('shopThemes').style.display = 'block';
+        } else if (subtab === 'bonuses') {
+          document.getElementById('shopBonuses').style.display = 'block';
+          loadBonuses();
+        }
+
+        if (tg && tg.HapticFeedback) {
+          tg.HapticFeedback.selectionChanged();
+        }
+      });
+    });
+
+    // Заглушка — позже заменим на реальные бонусы
+    function loadBonuses() {
+      const bonusesList = document.getElementById('bonusesList');
+      if (bonusesList.children.length === 0 ||
+          bonusesList.querySelector('.empty')) {
+        // пока пусто — можно оставить заглушку
+      }
+    }
     loadCount();
   </script>
 </body>
