@@ -145,21 +145,22 @@ async function handleApi(request, env, path, corsHeaders) {
     let energyUpdatedAt = row?.energy_updated_at ?? now;
 
     // Восстановление: +5 за каждые 5 секунд
-    const elapsed = now - energyUpdatedAt;
+        const elapsed = now - energyUpdatedAt;
     const intervals = Math.floor(elapsed / 1000);
     const restored = intervals * 1;
 
     if (restored > 0) {
       energy = Math.min(500, energy + restored);
       energyUpdatedAt = energyUpdatedAt + intervals * 1000;
-
-      // ⚠️ Сохраняем восстановление в БД
       await env.DB.prepare(
         'UPDATE counters SET energy = ?, energy_updated_at = ? WHERE chat_id = ?'
       ).bind(energy, energyUpdatedAt, userId).run();
     }
 
-    return json({ energy: energy }, 200, corsHeaders);
+    // Возвращаем ВОЗМОЖНО большее значение — с учётом "недобранных" миллисекунд
+    const remainder = elapsed - intervals * 1000; // сколько мс "лишних"
+    const preview = Math.min(500, energy + (remainder >= 1000 ? 1 : 0));
+    return json({ energy: preview }, 200, corsHeaders);
   }
 
   // ---------- POST /api/count ----------
