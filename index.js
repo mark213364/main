@@ -146,12 +146,12 @@ async function handleApi(request, env, path, corsHeaders) {
 
     // Восстановление: +5 за каждые 5 секунд
     const elapsed = now - energyUpdatedAt;
-    const intervals = Math.floor(elapsed / 5000);
-    const restored = intervals * 5;
+    const intervals = Math.floor(elapsed / 1000);
+    const restored = intervals * 1;
 
     if (restored > 0) {
       energy = Math.min(500, energy + restored);
-      energyUpdatedAt = energyUpdatedAt + intervals * 5000;
+      energyUpdatedAt = energyUpdatedAt + intervals * 1000;
 
       // ⚠️ Сохраняем восстановление в БД
       await env.DB.prepare(
@@ -188,12 +188,12 @@ async function handleApi(request, env, path, corsHeaders) {
 
     // Сначала восстановим то, что накопилось
     const elapsed = now - energyUpdatedAt;
-    const intervals = Math.floor(elapsed / 5000);
-    const restored = intervals * 5;
+    const intervals = Math.floor(elapsed / 1000);
+    const restored = intervals * 1;
 
     if (restored > 0) {
       energy = Math.min(500, energy + restored);
-      energyUpdatedAt = energyUpdatedAt + intervals * 5000;
+      energyUpdatedAt = energyUpdatedAt + intervals * 1000;
     }
 
     // Проверка: хватает ли энергии
