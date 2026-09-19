@@ -10,7 +10,7 @@
 // ============================================================
 
 // ⚠️ ЗАМЕНИ на свой Telegram user_id (узнать: @userinfobot)
-const ADMIN_ID = 123456789;
+const ADMIN_ID = 5946292761;
 
 export default {
   async fetch(request, env) {
@@ -87,7 +87,7 @@ async function handleStart(message, env) {
     {
       inline_keyboard: [[
         // ⚠️ ЗАМЕНИ на URL своего мини-приложения (GitHub Pages)
-        { text: '🚀 Открыть приложение', web_app: { url: 'https://ТВОЙ_GITHUB_PAGES_URL/' } }
+        { text: '🚀 Открыть приложение', web_app: { url: 'https://mark213364.github.io/main/index.html' } }
       ]]
     }
   );
