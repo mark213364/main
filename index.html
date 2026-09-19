@@ -772,20 +772,75 @@
     // ============================================================
 
     // Применить тему к странице
-    function applyTheme(theme) {
+        function applyTheme(theme) {
       if (!theme) return;
 
-      document.body.style.background = theme.bg;
-      document.body.style.backgroundAttachment = 'fixed';
+      const root = document.documentElement;
+      const body = document.body;
+
+      // Фон
+      body.style.background = theme.bg;
+      body.style.backgroundAttachment = 'fixed';
 
       if (theme.animated) {
-        document.body.style.backgroundSize = '400% 400%';
-        document.body.style.animation = 'gradientShift 15s ease infinite';
+        body.style.backgroundSize = '400% 400%';
+        body.style.animation = 'gradientShift 15s ease infinite';
       } else {
-        document.body.style.backgroundSize = '';
-        document.body.style.animation = '';
+        body.style.backgroundSize = '';
+        body.style.animation = '';
       }
 
+      // Цвета (из темы)
+      root.style.setProperty('--accent-color', theme.accent);
+
+      // Производные цвета (soft, border, glow) из hex
+      const rgb = hexToRgb(theme.accent);
+      if (rgb) {
+        root.style.setProperty('--accent-color-soft', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)`);
+        root.style.setProperty('--accent-color-border', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)`);
+        root.style.setProperty('--accent-color-glow', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.6)`);
+        root.style.setProperty('--accent-color-bg', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.15)`);
+
+        // Панель (чуть темнее основного фона)
+        root.style.setProperty('--panel-bg', hexToRgba(theme.accent, 0.15, '#0a0e27'));
+        root.style.setProperty('--panel-border', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)`);
+      }
+
+      // Градиент кнопки
+      root.style.setProperty('--btn-gradient', theme.btn);
+
+      // Тень кнопки
+      if (theme.shadow) {
+        root.style.setProperty('--btn-shadow', theme.shadow);
+      }
+
+      // Кнопка «Нажми»
+      const btn = document.getElementById('tapBtn');
+      if (btn) {
+        btn.style.background = theme.btn;
+        btn.style.boxShadow = '0 10px 40px ' + theme.shadow;
+      }
+    }
+
+    // Хелпер: #a855f7 → {r:168, g:85, b:247}
+    function hexToRgb(hex) {
+      if (!hex || hex.charAt(0) !== '#') return null;
+      const h = hex.slice(1);
+      if (h.length !== 6) return null;
+      return {
+        r: parseInt(h.slice(0, 2), 16),
+        g: parseInt(h.slice(2, 4), 16),
+        b: parseInt(h.slice(4, 6), 16),
+      };
+    }
+
+    // Хелпер: полупрозрачный цвет панели
+    function hexToRgba(hex, alpha, fallback) {
+      const rgb = hexToRgb(hex);
+      if (!rgb) return fallback || 'rgba(10, 14, 39, 0.75)';
+      return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
+    }
+    
       // Кнопка
       const btn = document.getElementById('tapBtn');
       if (btn) {
