@@ -439,7 +439,7 @@
     window.addEventListener('resize', resizeCanvas);
 
     // ===== Загрузка счёта =====
-    async function loadCount() {
+        async function loadCount() {
       try {
         const res = await fetch(API_URL + '/api/me', {
           headers: { 'X-Init-Data': tg ? tg.initData : '' }
@@ -447,6 +447,18 @@
         const data = await res.json();
         count = data.count || 0;
         counterEl.textContent = count;
+
+        // Применяем сохранённую тему
+        if (data.theme) {
+          const themeRes = await fetch(API_URL + '/api/themes', {
+            headers: { 'X-Init-Data': tg ? tg.initData : '' }
+          });
+          const themeData = await themeRes.json();
+          const activeTheme = themeData.themes.find(t => t.id === data.theme);
+          if (activeTheme) {
+            applyTheme(activeTheme);
+          }
+        }
       } catch (e) {
         console.error('Load error:', e);
         if (tg && tg.CloudStorage) {
@@ -556,6 +568,9 @@
 
         if (screenName === 'leaderboard') {
           loadLeaderboard();
+        }
+        if (screenName === 'shop') {
+          loadThemes();
         }
 
         if (tg && tg.HapticFeedback) {
