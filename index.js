@@ -109,12 +109,20 @@ async function handleApi(request, env, path, corsHeaders) {
 
     const now = Date.now();
     let energy = row?.energy ?? 500;
-    const energyUpdatedAt = row?.energy_updated_at ?? now;
+    let energyUpdatedAt = row?.energy_updated_at ?? now;
 
     const elapsed = now - energyUpdatedAt;
-    const restored = Math.floor(elapsed / 5000) * 5;
+    const intervals = Math.floor(elapsed / 5000);
+    const restored = intervals * 5;
+
     if (restored > 0) {
       energy = Math.min(500, energy + restored);
+      energyUpdatedAt = energyUpdatedAt + intervals * 5000;
+
+      // ⚠️ ГЛАВНОЕ — сохраняем в БД
+      await env.DB.prepare(
+        'UPDATE counters SET energy = ?, energy_updated_at = ? WHERE chat_id = ?'
+      ).bind(energy, energyUpdatedAt, userId).run();
     }
 
     return json({ energy: energy }, 200, corsHeaders);
