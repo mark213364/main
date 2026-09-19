@@ -16,8 +16,8 @@
     html { height: 100%; }
 
     body {
-      position: relative;
       min-height: 100%;
+      position: relative;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       color: #ffffff;
       user-select: none;
@@ -83,7 +83,7 @@
       top: 56px;
       left: 0;
       right: 0;
-      bottom: 0;
+      bottom: 130px;
       z-index: 50;
     }
 
@@ -95,7 +95,7 @@
       align-items: center;
       justify-items: center;
       height: 100%;
-      width: 100%
+      width: 100%;
       padding: 20px;
       box-sizing: border-box;
       position: relative;
@@ -183,6 +183,7 @@
     .rank.gold   { color: #ffd700; }
     .rank.silver { color: #c0c0c0; }
     .rank.bronze { color: #cd7f32; }
+
     .player-name {
       flex: 1;
       margin-left: 12px;
@@ -206,6 +207,89 @@
       color: rgba(255, 255, 255, 0.5);
       font-size: 15px;
     }
+
+    /* ===== Полоска энергии ===== */
+    .energy-bar {
+      position: fixed;
+      bottom: 70px;
+      left: 16px;
+      right: 16px;
+      height: 36px;
+      background: rgba(10, 14, 39, 0.85);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(168, 85, 247, 0.3);
+      border-radius: 18px;
+      overflow: hidden;
+      z-index: 150;
+    }
+
+    .energy-fill {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, #6366f1, #a855f7);
+      transition: width 0.3s ease;
+    }
+
+    .energy-text {
+      position: absolute;
+      top: 50%;
+      right: 16px;
+      transform: translateY(-50%);
+      font-size: 14px;
+      font-weight: 700;
+      color: #ffffff;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+      z-index: 1;
+    }
+
+    /* ===== Нижняя панель ===== */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      background: rgba(10, 14, 39, 0.85);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-top: 1px solid rgba(168, 85, 247, 0.3);
+      padding: 10px 0;
+      padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+      z-index: 200;
+    }
+
+    .nav-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      background: none;
+      border: none;
+      color: rgba(255, 255, 255, 0.65);
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 8px 16px;
+      border-radius: 12px;
+      transition: color 0.2s ease, background 0.2s ease;
+    }
+
+    .nav-btn:active {
+      background: rgba(168, 85, 247, 0.15);
+      color: #ffffff;
+    }
+
+    .nav-btn .icon {
+      font-size: 22px;
+      line-height: 1;
+    }
   </style>
 </head>
 <body>
@@ -219,7 +303,7 @@
   <div class="screen active" id="screen-clicker">
     <div class="container">
       <div class="counter" id="counter">0</div>
-      <button class="btn" id="tapBtn">Жми!</button>
+      <button class="btn" id="tapBtn">Нажми</button>
     </div>
   </div>
 
@@ -230,13 +314,36 @@
     </div>
   </div>
 
+  <!-- Полоска энергии -->
+  <div class="energy-bar">
+    <div class="energy-fill" id="energyFill"></div>
+    <div class="energy-text" id="energyText">500 / 500</div>
+  </div>
+
+  <!-- Нижняя панель -->
+  <div class="bottom-nav">
+    <button class="nav-btn" id="donateBtn">
+      <span class="icon">💝</span>
+      <span>Донат</span>
+    </button>
+    <button class="nav-btn" id="channelBtn">
+      <span class="icon">📢</span>
+      <span>Канал</span>
+    </button>
+    <button class="nav-btn" id="infoBtn">
+      <span class="icon">ℹ️</span>
+      <span>О боте</span>
+    </button>
+  </div>
+
   <script>
-    const tg = window.Telegram?.WebApp;
+    const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
     if (tg) {
       tg.ready();
       tg.expand();
     }
 
+    // ⚠️ ЗАМЕНИ на URL твоего воркера
     const API_URL = 'https://basicclickbot.g3316464.workers.dev';
 
     const counterEl = document.getElementById('counter');
@@ -244,10 +351,14 @@
     const canvas = document.getElementById('particles');
     const ctx = canvas.getContext('2d');
     const leaderboardList = document.getElementById('leaderboardList');
+    const energyFill = document.getElementById('energyFill');
+    const energyText = document.getElementById('energyText');
 
     let count = 0;
+    let energy = 500;
     let particles = [];
     let saveTimer = null;
+    let energyTimer = null;
 
     function resizeCanvas() {
       canvas.width = window.innerWidth;
@@ -256,18 +367,31 @@
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
+    function updateEnergyUI() {
+      const percent = (energy / 500) * 100;
+      energyFill.style.width = percent + '%';
+      energyText.textContent = energy + ' / 500';
+    }
+
     async function loadCount() {
       try {
         const res = await fetch(API_URL + '/api/me', {
-          headers: { 'X-Init-Data': tg.initData }
+          headers: { 'X-Init-Data': tg ? tg.initData : '' }
         });
         const data = await res.json();
         count = data.count || 0;
         counterEl.textContent = count;
+
+        const resE = await fetch(API_URL + '/api/energy', {
+          headers: { 'X-Init-Data': tg ? tg.initData : '' }
+        });
+        const dataE = await resE.json();
+        energy = dataE.energy !== undefined ? dataE.energy : 500;
+        updateEnergyUI();
       } catch (e) {
         console.error('Load error:', e);
         if (tg && tg.CloudStorage) {
-          tg.CloudStorage.getItem('tap_count', (err, value) => {
+          tg.CloudStorage.getItem('tap_count', function(err, value) {
             if (!err && value) {
               count = parseInt(value, 10) || 0;
               counterEl.textContent = count;
@@ -277,25 +401,39 @@
       }
     }
 
-    function saveCount() {
+    function saveCount(spent) {
       clearTimeout(saveTimer);
       saveTimer = setTimeout(async () => {
         if (tg && tg.CloudStorage) {
           tg.CloudStorage.setItem('tap_count', String(count));
         }
         try {
-          await fetch(API_URL + '/api/count', {
+          const res = await fetch(API_URL + '/api/count', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'X-Init-Data': tg.initData
+              'X-Init-Data': tg ? tg.initData : ''
             },
-            body: JSON.stringify({ count: count })
+            body: JSON.stringify({ count: count, spent: spent })
           });
+          const data = await res.json();
+
+          if (data.energy !== undefined) {
+            energy = data.energy;
+            updateEnergyUI();
+          }
+
+          if (data.blocked === 'no_energy') {
+            count = data.count || count;
+            counterEl.textContent = count;
+            if (tg && tg.HapticFeedback) {
+              tg.HapticFeedback.notificationOccurred('warning');
+            }
+          }
         } catch (e) {
           console.error('Save failed:', e);
         }
-      }, 500);
+      }, 200);
     }
 
     function spawnParticles(x, y) {
@@ -341,8 +479,17 @@
     animate();
 
     btn.addEventListener('click', () => {
+      if (energy <= 0) {
+        if (tg && tg.HapticFeedback) {
+          tg.HapticFeedback.notificationOccurred('error');
+        }
+        return;
+      }
+
       count++;
+      energy--;
       counterEl.textContent = count;
+      updateEnergyUI();
 
       counterEl.classList.add('bump');
       setTimeout(() => counterEl.classList.remove('bump'), 150);
@@ -354,7 +501,7 @@
         tg.HapticFeedback.impactOccurred('medium');
       }
 
-      saveCount();
+      saveCount(1);
     });
 
     document.querySelectorAll('.tab').forEach(tab => {
@@ -381,7 +528,7 @@
 
       try {
         const res = await fetch(API_URL + '/api/top', {
-          headers: { 'X-Init-Data': tg.initData }
+          headers: { 'X-Init-Data': tg ? tg.initData : '' }
         });
         const data = await res.json();
 
@@ -404,6 +551,7 @@
 
           const isMe = p.user_id === myId ? 'me' : '';
           const rankDisplay = i < 3 ? medals[i] : String(i + 1);
+
           const rawName = p.display_name || 'Игрок';
           const name = escapeHtml(rawName.charAt(0) === '@' ? rawName : '@' + rawName);
 
@@ -426,6 +574,56 @@
       div.textContent = text;
       return div.innerHTML;
     }
+
+    // ===== Нижняя навигация =====
+
+    // ⚠️ ЗАМЕНИ на свои ссылки
+    const DONATE_URL = 'https://t.me/tribute';
+    const CHANNEL_URL = 'https://t.me/твой_канал';
+
+    document.getElementById('donateBtn').addEventListener('click', () => {
+      if (tg && tg.openLink) {
+        tg.openLink(DONATE_URL);
+      } else {
+        window.open(DONATE_URL, '_blank');
+      }
+      if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+    });
+
+    document.getElementById('channelBtn').addEventListener('click', () => {
+      if (tg && tg.openTelegramLink) {
+        tg.openTelegramLink(CHANNEL_URL);
+      } else {
+        window.open(CHANNEL_URL, '_blank');
+      }
+      if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+    });
+
+    document.getElementById('infoBtn').addEventListener('click', () => {
+      if (tg && tg.showPopup) {
+        tg.showPopup({
+          title: 'О боте',
+          message: 'BasicClickBot — простой кликер с лидербордом.\n\n' +
+                   '🎯 Жми кнопку, чтобы увеличить счёт\n' +
+                   '⚡ Энергия восстанавливается +5 за 2 секунды\n' +
+                   '🏆 Соревнуйся с другими игроками\n' +
+                   '💝 Поддержи проект донатом\n\n' +
+                   'Версия 1.0',
+          buttons: [{ type: 'close' }]
+        });
+      } else {
+        alert('BasicClickBot — простой кликер с лидербордом. Версия 1.0');
+      }
+      if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+    });
+
+    // ===== Локальное восстановление энергии =====
+    energyTimer = setInterval(() => {
+      if (energy < 500) {
+        energy = Math.min(500, energy + 5);
+        updateEnergyUI();
+      }
+    }, 2000);
 
     loadCount();
   </script>
