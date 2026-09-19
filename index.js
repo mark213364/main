@@ -162,8 +162,13 @@ async function handleApi(request, env, path, corsHeaders) {
   // GET /api/top — топ-10
   if (path === '/api/top' && request.method === 'GET') {
     const result = await env.DB.prepare(
-      'SELECT chat_id AS user_id, name, count FROM counters ORDER BY count DESC LIMIT 10'
-    ).all();
+  `SELECT chat_id AS user_id,
+          COALESCE(username, name, 'Игрок') AS display_name,
+          count
+   FROM counters
+   ORDER BY count DESC
+   LIMIT 10`
+   ).all();
 
     return json({ players: result.results }, 200, corsHeaders);
   }
