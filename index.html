@@ -616,16 +616,7 @@
       }
       if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     });
-
-    // ===== Локальное восстановление энергии =====
-    energyTimer = setInterval(() => {
-      if (energy < 500) {
-        energy = Math.min(500, energy + 5);
-        updateEnergyUI();
-      }
-    }, 2000);
-
-    loadCount();
+    //loadcount()
   </script>
 </body>
 </html>
