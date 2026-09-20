@@ -12,7 +12,6 @@ const ADMIN_ID = 5946292761;
 
 export default {
   async fetch(request, env) {
-    // Проверка метода
     if (request.method !== 'POST') {
       return new Response('Proposals Bot is running!', { status: 200 });
     }
@@ -20,16 +19,12 @@ export default {
     try {
       const update = await request.json();
 
-      // ============================================================
-      // 1. ПРИЁМ НОВОГО ПРЕДЛОЖЕНИЯ ОТ ПОЛЬЗОВАТЕЛЯ
-      // ============================================================
+      // 1. Новое предложение
       if (update.message && update.message.text) {
         return await handleNewProposal(update.message, env);
       }
 
-      // ============================================================
-      // 2. ОБРАБОТКА НАЖАТИЯ КНОПКИ АДМИНОМ
-      // ============================================================
+      // 2. Нажатие кнопки админом
       if (update.callback_query) {
         return await handleCallback(update.callback_query, env);
       }
@@ -76,11 +71,15 @@ async function handleNewProposal(message, env) {
     return new Response('Error', { status: 500 });
   }
 
-  // Отправляем админу
+  // Экранируем Markdown в тексте пользователя
+  const safeText = escapeMarkdown(text);
+  const safeUsername = username ? escapeMarkdown('@' + username) : ('ID ' + userId);
+
+  // Отправляем админу с Markdown
   const adminText =
     '📩 *Новое предложение #' + proposalId + '*\n\n' +
-    'От: ' + (username ? '@' + username : 'ID ' + userId) + '\n\n' +
-    text;
+    'От: ' + safeUsername + '\n\n' +
+    safeText;
 
   const sendRes = await fetch(
     'https://api.telegram.org/bot' + env.BOT_TOKEN + '/sendMessage',
@@ -133,18 +132,22 @@ async function handleCallback(cb, env) {
     'UPDATE proposals SET status = ? WHERE id = ?'
   ).bind(status, proposalId).run();
 
-  // Формируем текст для пользователя
+  // Формируем текст для пользователя (Markdown)
   const isApproved = action === 'approve';
   const title = isApproved
-    ? '✅ Твоё предложение принято!'
-    : '❌ Твоё предложение отклонено';
+    ? '✅ *Твоё предложение принято!*'
+    : '❌ *Твоё предложение отклонено*';
   const body = isApproved
     ? 'Спасибо! Мы добавим это в игру в ближайшее время.'
     : 'Спасибо за идею! К сожалению, сейчас мы не можем её реализовать.';
 
-  // Уведомляем пользователя ЧЕРЕЗ ЭТОГО ЖЕ БОТА (chatpromo)
-  await sendMessage(env.BOT_TOKEN, userId,
-    title + '\n\n' + body + '\n\nПредложение #' + proposalId);
+  const userText =
+    title + '\n\n' +
+    body + '\n\n' +
+    '_Предложение #' + proposalId + '_';
+
+  // Уведомляем пользователя ЧЕРЕЗ ЭТОГО ЖЕ БОТА
+  await sendMessage(env.BOT_TOKEN, userId, userText, 'Markdown');
 
   // Убираем кнопки из сообщения админа
   await fetch(
@@ -160,7 +163,7 @@ async function handleCallback(cb, env) {
     }
   );
 
-  // Отвечаем на callback (убираем "часики" на кнопке)
+  // Отвечаем на callback
   const verdict = isApproved ? 'принято' : 'отклонено';
   await answerCallback(env.BOT_TOKEN, cb.id, 'Статус: ' + verdict);
 
@@ -171,14 +174,18 @@ async function handleCallback(cb, env) {
 // ХЕЛПЕРЫ
 // ============================================================
 
-async function sendMessage(token, chatId, text) {
+async function sendMessage(token, chatId, text, parseMode) {
+  const body = {
+    chat_id: chatId,
+    text: text
+  };
+  if (parseMode) {
+    body.parse_mode = parseMode;
+  }
   return fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text: text
-    })
+    body: JSON.stringify(body)
   });
 }
 
@@ -191,4 +198,16 @@ async function answerCallback(token, callbackId, text) {
       text: text
     })
   });
+}
+
+// ============================================================
+// ЭКРАНИРОВАНИЕ MARKDOWN
+// ============================================================
+// Заменяет спецсимволы Markdown на экранированные:
+//   * _ ` [ ] ( ) ~ > # + - = | { } . !
+// Тогда Telegram НЕ парсит их как разметку.
+
+function escapeMarkdown(text) {
+  if (!text) return '';
+  return String(text).replace(/([_*\[\]()~`>#+\-=|{}.!])/g, '\\$1');
 }
