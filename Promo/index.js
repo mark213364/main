@@ -42,7 +42,8 @@ export default {
       inline_keyboard: [[
                 { text: '✅ Принять', callback_data: `approve_${proposalId}_${userId}` },
                 { text: '❌ Отклонить', callback_data: `reject_${proposalId}_${userId}` }
-    ]]}
+    ]];
+    }
   })
 });
         
