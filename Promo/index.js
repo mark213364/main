@@ -77,10 +77,10 @@ console.log('SEND TO ADMIN:', JSON.stringify(sendData));
           'UPDATE proposals SET status = ? WHERE id = ?'
         ).bind(status, proposalId).run();
 
-        // Уведомляем пользователя через Tapllybot
+        // Уведомляем пользователя через chatpromo (того же бота)
         const emoji = action === 'approve' ? '✅' : '❌';
         const verdict = action === 'approve' ? 'принято' : 'отклонено';
-        await fetch(`https://api.telegram.org/bot${TAPLLYBOT_TOKEN}/sendMessage`, {
+        await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
