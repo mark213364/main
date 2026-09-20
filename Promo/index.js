@@ -1,12 +1,16 @@
 // ============================================================
-// CHATPROMO — бот для предложений + панель управления
+// CHATPROMO — бот для предложений
+// ============================================================
+// 1. Пользователь пишет в боте ИЛИ в мини-аппе
+// 2. Предложение уходит админу с кнопками ✅ / ❌
+// 3. Админ нажимает → пользователю приходит ответ в чат с ботом
 // ============================================================
 
 // ⚠️ ЗАМЕНИ на свой Telegram user_id
 const ADMIN_ID = 5946292761;
 
-// ⚠️ ЗАМЕНИ на URL своего мини-приложения
-const WEBAPP_URL = 'https://mark213364.github.io/main/Promo/index.html';
+// ⚠️ ЗАМЕНИ на URL своего мини-приложения (chatpromo.html)
+const WEBAPP_URL = 'https://mark213364.github.io/main/Promo/chatpromo.html';
 
 export default {
   async fetch(request, env) {
@@ -53,7 +57,7 @@ export default {
 };
 
 // ============================================================
-// ОБРАБОТКА СООБЩЕНИЙ ОТ ПОЛЬЗОВАТЕЛЕЙ
+// ОБРАБОТКА СООБЩЕНИЙ В БОТЕ
 // ============================================================
 
 async function handleMessage(message, env) {
@@ -61,42 +65,31 @@ async function handleMessage(message, env) {
   const username = message.from.username || null;
   const text = message.text;
 
-  // /start — приветствие
+  // /start — показать кнопку мини-приложения
   if (text === '/start') {
-    // Если это админ — показать кнопку панели
-    if (userId === ADMIN_ID) {
-      await sendMessage(env.BOT_TOKEN, userId,
-        '👋 Привет, админ!\n\n' +
-        'Открой панель, чтобы видеть все предложения.',
-        'Markdown',
-        {
-          inline_keyboard: [[
-            { text: '📋 Открыть панель', web_app: { url: WEBAPP_URL } }
-          ]]
-        });
-    } else {
-      await sendMessage(env.BOT_TOKEN, userId,
-        '👋 Привет!\n\n' +
-        'Напиши мне своё предложение — что добавить или изменить в игре.\n' +
-        'Я передам его разработчику, и он ответит тебе здесь же.');
-    }
-    return new Response('OK', { status: 200 });
-  }
-
-  // Если админ пишет /panel
-  if (text === '/panel' && userId === ADMIN_ID) {
     await sendMessage(env.BOT_TOKEN, userId,
-      '📋 Панель предложений:',
+      '👋 Привет!\n\n' +
+      'Нажми кнопку ниже, чтобы отправить своё предложение.',
       null,
       {
         inline_keyboard: [[
-          { text: '🚀 Открыть', web_app: { url: WEBAPP_URL } }
+          { text: '📝 Отправить предложение', web_app: { url: WEBAPP_URL } }
         ]]
       });
     return new Response('OK', { status: 200 });
   }
 
-  // Сохраняем предложение в БД
+  // Если пишут текстом в чат — тоже принимаем как предложение
+  await saveProposalAndNotify(userId, username, text, env);
+
+  return new Response('OK', { status: 200 });
+}
+
+// ============================================================
+// СОХРАНЕНИЕ ПРЕДЛОЖЕНИЯ + УВЕДОМЛЕНИЕ АДМИНА
+// ============================================================
+
+async function saveProposalAndNotify(userId, username, text, env) {
   let proposalId;
   try {
     const result = await env.DB.prepare(
@@ -108,11 +101,9 @@ async function handleMessage(message, env) {
     proposalId = result.id;
   } catch (e) {
     console.error('DB error:', e.message);
-    await sendMessage(env.BOT_TOKEN, userId, '❌ Ошибка сохранения. Попробуй позже.');
-    return new Response('Error', { status: 500 });
+    return null;
   }
 
-  // Отправляем админу
   const safeText = escapeMarkdown(text);
   const safeUsername = username ? escapeMarkdown('@' + username) : ('ID ' + userId);
 
@@ -142,15 +133,11 @@ async function handleMessage(message, env) {
   const sendData = await sendRes.json();
   console.log('SEND TO ADMIN:', JSON.stringify(sendData));
 
-  // Отвечаем пользователю
-  await sendMessage(env.BOT_TOKEN, userId,
-    '✅ Твоё предложение отправлено!\nОжидай ответа в этом чате.');
-
-  return new Response('OK', { status: 200 });
+  return proposalId;
 }
 
 // ============================================================
-// ОБРАБОТКА КНОПОК В ЧАТЕ БОТА
+// ОБРАБОТКА КНОПОК «ПРИНЯТЬ» / «ОТКЛОНИТЬ»
 // ============================================================
 
 async function handleCallback(cb, env) {
@@ -182,7 +169,6 @@ async function handleCallback(cb, env) {
   const userText =
     title + '\n\n' + body + '\n\n' + '_Предложение #' + proposalId + '_';
 
-  // Уведомляем пользователя
   await sendMessage(env.BOT_TOKEN, userId, userText, 'Markdown');
 
   // Убираем кнопки из сообщения админа
@@ -212,28 +198,12 @@ async function handleCallback(cb, env) {
 async function handleApi(request, env, path, corsHeaders) {
   const userId = await verifyInitData(request, env);
 
-  // ===== GET /api/proposals — список всех предложений =====
-  if (path === '/api/proposals' && request.method === 'GET') {
-    if (!userId || userId !== ADMIN_ID) {
-      return json({ error: 'forbidden' }, 403, corsHeaders);
-    }
-
-    const result = await env.DB.prepare(
-      `SELECT id, user_id, username, text, status, created_at
-       FROM proposals
-       ORDER BY created_at DESC
-       LIMIT 100`
-    ).all();
-
-    return json({ proposals: result.results }, 200, corsHeaders);
+  if (!userId) {
+    return json({ error: 'unauthorized' }, 401, corsHeaders);
   }
 
-  // ===== POST /api/proposals/decide — принять/отклонить =====
-  if (path === '/api/proposals/decide' && request.method === 'POST') {
-    if (!userId || userId !== ADMIN_ID) {
-      return json({ error: 'forbidden' }, 403, corsHeaders);
-    }
-
+  // ===== POST /api/send — отправить предложение =====
+  if (path === '/api/send' && request.method === 'POST') {
     let body;
     try {
       body = await request.json();
@@ -241,64 +211,28 @@ async function handleApi(request, env, path, corsHeaders) {
       return json({ error: 'invalid body' }, 400, corsHeaders);
     }
 
-    const proposalId = parseInt(body.proposalId, 10);
-    const action = body.action;
+    const text = (body.text || '').trim();
 
-    if (!proposalId || !action) {
-      return json({ error: 'invalid params' }, 400, corsHeaders);
+    if (text.length < 3) {
+      return json({ error: 'too_short', message: 'Слишком короткое предложение' }, 400, corsHeaders);
+    }
+    if (text.length > 1000) {
+      return json({ error: 'too_long', message: 'Максимум 1000 символов' }, 400, corsHeaders);
     }
 
-    const status = action === 'approve' ? 'approved' : 'rejected';
+    // Достаём username из initData
+    const initData = request.headers.get('X-Init-Data');
+    const params = new URLSearchParams(initData);
+    const user = JSON.parse(params.get('user') || '{}');
+    const username = user.username || null;
 
-    const proposal = await env.DB.prepare(
-      'SELECT user_id FROM proposals WHERE id = ?'
-    ).bind(proposalId).first();
+    const proposalId = await saveProposalAndNotify(userId, username, text, env);
 
-    if (!proposal) {
-      return json({ error: 'not found' }, 404, corsHeaders);
+    if (!proposalId) {
+      return json({ error: 'save_failed' }, 500, corsHeaders);
     }
 
-    await env.DB.prepare(
-      'UPDATE proposals SET status = ? WHERE id = ?'
-    ).bind(status, proposalId).run();
-
-    // Уведомляем пользователя через бота
-    const isApproved = action === 'approve';
-    const title = isApproved
-      ? '✅ *Твоё предложение принято!*'
-      : '❌ *Твоё предложение отклонено*';
-    const bodyText = isApproved
-      ? 'Спасибо! Мы добавим это в игру в ближайшее время.'
-      : 'Спасибо за идею! К сожалению, сейчас мы не можем её реализовать.';
-
-    await sendMessage(env.BOT_TOKEN, proposal.user_id,
-      title + '\n\n' + bodyText + '\n\n_Предложение #' + proposalId + '_',
-      'Markdown');
-
-    return json({ ok: true, status: status }, 200, corsHeaders);
-  }
-
-  // ===== GET /api/stats — статистика =====
-  if (path === '/api/stats' && request.method === 'GET') {
-    if (!userId || userId !== ADMIN_ID) {
-      return json({ error: 'forbidden' }, 403, corsHeaders);
-    }
-
-    const row = await env.DB.prepare(
-      `SELECT
-         COUNT(*) AS total,
-         SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending,
-         SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) AS approved,
-         SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) AS rejected
-       FROM proposals`
-    ).first();
-
-    return json({
-      total: row.total || 0,
-      pending: row.pending || 0,
-      approved: row.approved || 0,
-      rejected: row.rejected || 0
-    }, 200, corsHeaders);
+    return json({ ok: true, proposalId: proposalId }, 200, corsHeaders);
   }
 
   return json({ error: 'not found' }, 404, corsHeaders);
@@ -316,10 +250,7 @@ function json(data, status, corsHeaders) {
 }
 
 async function sendMessage(token, chatId, text, parseMode, keyboard) {
-  const body = {
-    chat_id: chatId,
-    text: text
-  };
+  const body = { chat_id: chatId, text: text };
   if (parseMode) body.parse_mode = parseMode;
   if (keyboard) body.reply_markup = keyboard;
 
@@ -334,14 +265,10 @@ async function answerCallback(token, callbackId, text) {
   return fetch('https://api.telegram.org/bot' + token + '/answerCallbackQuery', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      callback_query_id: callbackId,
-      text: text
-    })
+    body: JSON.stringify({ callback_query_id: callbackId, text: text })
   });
 }
 
-// Проверка подписи initData
 async function verifyInitData(request, env) {
   const initData = request.headers.get('X-Init-Data');
   if (!initData) return null;
@@ -363,29 +290,23 @@ async function verifyInitData(request, env) {
     if (!authDate || Date.now() / 1000 - authDate > 86400) return null;
 
     const encoder = new TextEncoder();
-
     const secretKey = await crypto.subtle.importKey(
       'raw', encoder.encode('WebAppData'),
       { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
     );
-
     const derivedKey = await crypto.subtle.sign(
       'HMAC', secretKey, encoder.encode(env.BOT_TOKEN)
     );
-
     const verifyKey = await crypto.subtle.importKey(
       'raw', derivedKey,
       { name: 'HMAC', hash: 'SHA-256' }, false, ['verify']
     );
-
     const hashBytes = new Uint8Array(
       hash.match(/.{1,2}/g).map(b => parseInt(b, 16))
     );
-
     const isValid = await crypto.subtle.verify(
       'HMAC', verifyKey, hashBytes, encoder.encode(dataCheckString)
     );
-
     if (!isValid) return null;
 
     const user = JSON.parse(params.get('user') || '{}');
