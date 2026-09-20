@@ -13,7 +13,6 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    /* ===== CSS-переменные (по умолчанию — Telegram) ===== */
     :root {
       --accent-color: var(--tg-theme-button-color, #2ea6ff);
       --accent-color-soft: rgba(46, 166, 255, 0.3);
@@ -24,6 +23,7 @@
       --btn-shadow: rgba(46, 166, 255, 0.3);
       --panel-bg: var(--tg-theme-bg-color, #ffffff);
       --panel-border: var(--tg-theme-secondary-bg-color, #f0f0f0);
+      --btn-text-color: var(--tg-theme-button-text-color, #ffffff);
     }
 
     html { height: 100%; }
@@ -83,7 +83,7 @@
       position: absolute;
       bottom: 0; left: 20%; right: 20%;
       height: 3px;
-      background: var(--tg-theme-button-color, #2ea6ff);
+      background: var(--btn-gradient);
       border-radius: 3px 3px 0 0;
     }
 
@@ -131,7 +131,7 @@
       border-radius: 50%;
       border: none;
       background: var(--btn-gradient);
-      color: var(--tg-theme-button-text-color, #ffffff);
+      color: var(--btn-text-color);
       font-size: 22px;
       font-weight: 600;
       cursor: pointer;
@@ -152,7 +152,7 @@
       transform: translateX(-50%);
       padding: 6px 16px;
       background: var(--btn-gradient);
-      color: var(--tg-theme-button-text-color, #ffffff);
+      color: var(--btn-text-color);
       border-radius: 20px;
       font-size: 14px;
       font-weight: 700;
@@ -262,8 +262,8 @@
     }
 
     .shop-subtab.active {
-      color: var(--tg-theme-button-text-color, #ffffff);
-      background: var(--tg-theme-button-color, #2ea6ff);
+      color: var(--btn-text-color);
+      background: var(--btn-gradient);
     }
 
     .shop-list {
@@ -356,7 +356,7 @@
 
     .shop-buy-btn {
       background: var(--btn-gradient);
-      color: var(--tg-theme-button-text-color, #ffffff);
+      color: var(--btn-text-color);
       border: none;
       border-radius: 10px;
       padding: 8px 14px;
@@ -371,6 +371,7 @@
     .shop-buy-btn:active { transform: scale(0.95); }
     .shop-buy-btn:disabled {
       background: rgba(128, 128, 128, 0.3);
+      color: rgba(255, 255, 255, 0.6);
       cursor: default;
       opacity: 0.7;
     }
@@ -426,7 +427,7 @@
     .promo-btn {
       padding: 10px 16px;
       background: var(--btn-gradient);
-      color: var(--tg-theme-button-text-color, #ffffff);
+      color: var(--btn-text-color);
       border: none;
       border-radius: 10px;
       font-size: 13px;
@@ -470,7 +471,7 @@
       transition: color 0.2s ease;
     }
 
-    .nav-btn:active { color: var(--tg-theme-button-color, #2ea6ff); }
+    .nav-btn:active { color: var(--accent-color); }
     .nav-btn .icon { font-size: 22px; line-height: 1; }
 
     @keyframes gradientShift {
@@ -626,22 +627,20 @@
 
       // ===== СИСТЕМНАЯ ТЕМА (Классика) =====
       if (theme.isSystem) {
-        // Возвращаем всё к значениям Telegram
         body.style.background = 'var(--tg-theme-bg-color, #ffffff)';
         body.style.backgroundAttachment = '';
         body.style.backgroundSize = '';
         body.style.animation = '';
 
-        // Сбрасываем CSS-переменные
-        root.style.removeProperty('--accent-color');
-        root.style.removeProperty('--accent-color-soft');
-        root.style.removeProperty('--accent-color-border');
-        root.style.removeProperty('--accent-color-glow');
-        root.style.removeProperty('--accent-color-bg');
-        root.style.removeProperty('--btn-gradient');
-        root.style.removeProperty('--btn-shadow');
-        root.style.removeProperty('--panel-bg');
-        root.style.removeProperty('--panel-border');
+        // Возвращаем все переменные к системным значениям
+        root.style.setProperty('--accent-color', 'var(--tg-theme-button-color, #2ea6ff)');
+        root.style.setProperty('--accent-color-soft', 'rgba(46, 166, 255, 0.3)');
+        root.style.setProperty('--accent-color-border', 'rgba(46, 166, 255, 0.3)');
+        root.style.setProperty('--accent-color-glow', 'rgba(46, 166, 255, 0.6)');
+        root.style.setProperty('--accent-color-bg', 'rgba(46, 166, 255, 0.15)');
+        root.style.setProperty('--btn-gradient', 'var(--tg-theme-button-color, #2ea6ff)');
+        root.style.setProperty('--btn-shadow', 'rgba(46, 166, 255, 0.3)');
+        root.style.setProperty('--btn-text-color', 'var(--tg-theme-button-text-color, #ffffff)');
 
         const tapBtnEl = document.getElementById('tapBtn');
         if (tapBtnEl) {
@@ -659,8 +658,6 @@
         root.style.setProperty('--accent-color-border', 'rgba(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ', 0.3)');
         root.style.setProperty('--accent-color-glow', 'rgba(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ', 0.6)');
         root.style.setProperty('--accent-color-bg', 'rgba(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ', 0.15)');
-        root.style.setProperty('--panel-bg', 'rgba(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ', 0.15)');
-        root.style.setProperty('--panel-border', 'rgba(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ', 0.3)');
       }
 
       body.style.background = theme.bg;
@@ -676,6 +673,9 @@
 
       root.style.setProperty('--btn-gradient', theme.btn);
       if (theme.shadow) root.style.setProperty('--btn-shadow', theme.shadow);
+
+      // Цвет текста на кнопках для кастомной темы всегда белый
+      root.style.setProperty('--btn-text-color', '#ffffff');
 
       const tapBtnEl = document.getElementById('tapBtn');
       if (tapBtnEl) {
