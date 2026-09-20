@@ -207,6 +207,27 @@ async function handleApi(request, env, path, corsHeaders) {
       return json({ error: 'too_long', message: 'Максимум 1000 символов' }, 400, corsHeaders);
     }
 
+    // ===== Проверка кулдауна 5 минут =====
+    const COOLDOWN_MS = 5 * 60 * 1000; // 5 минут
+
+    const lastProposal = await env.DB.prepare(
+      'SELECT created_at FROM proposals WHERE user_id = ? ORDER BY created_at DESC LIMIT 1'
+    ).bind(userId).first();
+
+    if (lastProposal) {
+      const elapsed = Date.now() - lastProposal.created_at;
+      const remaining = COOLDOWN_MS - elapsed;
+
+      if (remaining > 0) {
+        return json({
+          error: 'cooldown',
+          message: 'Подожди перед следующей отправкой',
+          remaining: remaining,        // миллисекунды
+          remainingSec: Math.ceil(remaining / 1000)
+        }, 429, corsHeaders);
+      }
+    }
+
     const initData = request.headers.get('X-Init-Data');
     const params = new URLSearchParams(initData);
     const user = JSON.parse(params.get('user') || '{}');
@@ -221,6 +242,27 @@ async function handleApi(request, env, path, corsHeaders) {
     return json({ ok: true, proposalId: proposalId }, 200, corsHeaders);
   }
 
+  // ===== GET /api/cooldown — узнать оставшееся время =====
+  if (path === '/api/cooldown' && request.method === 'GET') {
+    const COOLDOWN_MS = 5 * 60 * 1000;
+
+    const lastProposal = await env.DB.prepare(
+      'SELECT created_at FROM proposals WHERE user_id = ? ORDER BY created_at DESC LIMIT 1'
+    ).bind(userId).first();
+
+    if (!lastProposal) {
+      return json({ canSend: true, remaining: 0 }, 200, corsHeaders);
+    }
+
+    const elapsed = Date.now() - lastProposal.created_at;
+    const remaining = Math.max(0, COOLDOWN_MS - elapsed);
+
+    return json({
+      canSend: remaining === 0,
+      remaining: remaining,
+      remainingSec: Math.ceil(remaining / 1000)
+    }, 200, corsHeaders);
+  }
   // ===== Всё ниже — только для админа =====
 
   // GET /api/proposals?status=... — список с фильтром
