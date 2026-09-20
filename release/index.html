@@ -21,9 +21,9 @@
       --accent-color-bg: rgba(46, 166, 255, 0.15);
       --btn-gradient: var(--tg-theme-button-color, #2ea6ff);
       --btn-shadow: rgba(46, 166, 255, 0.3);
+      --btn-text-color: var(--tg-theme-button-text-color, #ffffff);
       --panel-bg: var(--tg-theme-bg-color, #ffffff);
       --panel-border: var(--tg-theme-secondary-bg-color, #f0f0f0);
-      --btn-text-color: var(--tg-theme-button-text-color, #ffffff);
     }
 
     html { height: 100%; }
@@ -52,9 +52,10 @@
       position: fixed;
       top: 0; left: 0; right: 0;
       display: flex;
-      background: var(--tg-theme-bg-color, #ffffff);
-      border-bottom: 1px solid var(--tg-theme-secondary-bg-color, #f0f0f0);
+      background: var(--panel-bg);
+      border-bottom: 1px solid var(--panel-border);
       z-index: 100;
+      transition: background 0.3s ease, border-color 0.3s ease;
     }
 
     .tab {
@@ -447,11 +448,12 @@
       display: flex;
       justify-content: space-around;
       align-items: center;
-      background: var(--tg-theme-bg-color, #ffffff);
-      border-top: 1px solid var(--tg-theme-secondary-bg-color, #f0f0f0);
+      background: var(--panel-bg);
+      border-top: 1px solid var(--panel-border);
       padding: 10px 0;
       padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
       z-index: 200;
+      transition: background 0.3s ease, border-color 0.3s ease;
     }
 
     .nav-btn {
@@ -562,7 +564,7 @@
     }
 
     // ⚠️ ЗАМЕНИ на URL воркера (БЕЗ слэша в конце!)
-    const API_URL = 'https://broad-boat-0443.g3316464.workers.dev';
+    const API_URL = 'https://broad-boat-0443.g3316464.workers.dev/api/me';
 
     // ⚠️ ЗАМЕНИ на свои ссылки
     const DONATE_URL = 'https://t.me/Kwbejdif';
@@ -632,7 +634,6 @@
         body.style.backgroundSize = '';
         body.style.animation = '';
 
-        // Возвращаем все переменные к системным значениям
         root.style.setProperty('--accent-color', 'var(--tg-theme-button-color, #2ea6ff)');
         root.style.setProperty('--accent-color-soft', 'rgba(46, 166, 255, 0.3)');
         root.style.setProperty('--accent-color-border', 'rgba(46, 166, 255, 0.3)');
@@ -641,6 +642,8 @@
         root.style.setProperty('--btn-gradient', 'var(--tg-theme-button-color, #2ea6ff)');
         root.style.setProperty('--btn-shadow', 'rgba(46, 166, 255, 0.3)');
         root.style.setProperty('--btn-text-color', 'var(--tg-theme-button-text-color, #ffffff)');
+        root.style.setProperty('--panel-bg', 'var(--tg-theme-bg-color, #ffffff)');
+        root.style.setProperty('--panel-border', 'var(--tg-theme-secondary-bg-color, #f0f0f0)');
 
         const tapBtnEl = document.getElementById('tapBtn');
         if (tapBtnEl) {
@@ -658,6 +661,8 @@
         root.style.setProperty('--accent-color-border', 'rgba(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ', 0.3)');
         root.style.setProperty('--accent-color-glow', 'rgba(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ', 0.6)');
         root.style.setProperty('--accent-color-bg', 'rgba(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ', 0.15)');
+        root.style.setProperty('--panel-bg', 'rgba(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ', 0.35)');
+        root.style.setProperty('--panel-border', 'rgba(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ', 0.3)');
       }
 
       body.style.background = theme.bg;
@@ -673,8 +678,6 @@
 
       root.style.setProperty('--btn-gradient', theme.btn);
       if (theme.shadow) root.style.setProperty('--btn-shadow', theme.shadow);
-
-      // Цвет текста на кнопках для кастомной темы всегда белый
       root.style.setProperty('--btn-text-color', '#ffffff');
 
       const tapBtnEl = document.getElementById('tapBtn');
