@@ -31,22 +31,23 @@ export default {
         const proposalId = row.id;
 
         // Пересылаем тебе
-        await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: ADMIN_ID,
-            text: `📩 *Новое предложение #${proposalId}*\n\nОт: @${username || userId}\n\n${text}`,
-            parse_mode: 'Markdown',
-            reply_markup: {
-              inline_keyboard: [[
+        const sendRes = await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    chat_id: ADMIN_ID,
+    text: `📩 *Новое предложение #${proposalId}*\n\nОт: @${username || userId}\n\n${text}`,
+    parse_mode: 'Markdown',
+    reply_markup: {
+      inline_keyboard: [[
                 { text: '✅ Принять', callback_data: `approve_${proposalId}_${userId}` },
                 { text: '❌ Отклонить', callback_data: `reject_${proposalId}_${userId}` }
-              ]]
-            }
-          })
-        });
-
+    }
+  })
+});
+        
+const sendData = await sendRes.json();
+console.log('SEND TO ADMIN:', JSON.stringify(sendData));
         // Ответ пользователю
         await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
           method: 'POST',
