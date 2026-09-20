@@ -6,7 +6,7 @@
 const ADMIN_ID = 5946292761;
 
 // ⚠️ ЗАМЕНИ на URL своего мини-приложения
-const WEBAPP_URL = 'https://mark213364.github.io/main/chatpromo.html';
+const WEBAPP_URL = 'https://mark213364.github.io/main/Promo/index.html';
 
 export default {
   async fetch(request, env) {
