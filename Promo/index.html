@@ -522,4 +522,195 @@
         textInput.value = '';
         updateUI();
         successScreen.classList.remove('active');
-       
+        successScreen.classList.add('hidden');
+        formScreen.classList.remove('hidden');
+        sendBtn.disabled = true;
+      });
+    }
+
+    // ============================================================
+    // 4. АДМИН-ПАНЕЛЬ
+    // ============================================================
+
+    // Нижняя навигация
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', () => {
+        switchTab(item.dataset.tab);
+      });
+    });
+
+    function switchTab(tab) {
+      currentTab = tab;
+
+      // Обновляем активную вкладку
+      document.querySelectorAll('.nav-item').forEach(t => {
+        t.classList.toggle('active', t.dataset.tab === tab);
+      });
+
+      // Если выбрали «Написать» — показываем форму
+      if (tab === 'write') {
+        adminScreen.classList.add('hidden');
+        formScreen.classList.remove('hidden');
+        if (!window._userFormStarted) {
+          startUserForm();
+          window._userFormStarted = true;
+        }
+        return;
+      }
+
+      // Иначе — показываем админ-панель
+      formScreen.classList.add('hidden');
+      successScreen.classList.add('hidden');
+      adminScreen.classList.remove('hidden');
+
+      loadStats();
+      loadProposals(tab);
+    }
+
+    async function loadStats() {
+      try {
+        const res = await fetch(API_URL + '/api/stats', {
+          headers: { 'X-Init-Data': tg ? tg.initData : '' }
+        });
+        if (!res.ok) return;
+
+        const data = await res.json();
+        document.getElementById('statTotal').textContent = data.total || 0;
+        document.getElementById('statPending').textContent = data.pending || 0;
+        document.getElementById('statApproved').textContent = data.approved || 0;
+        document.getElementById('statRejected').textContent = data.rejected || 0;
+
+        // Бейдж на вкладке «Ждут»
+        const badge = document.getElementById('badgePending');
+        if (data.pending > 0) {
+          badge.textContent = data.pending;
+          badge.classList.remove('hidden');
+        } else {
+          badge.classList.add('hidden');
+        }
+      } catch (e) {
+        console.error('Stats error:', e);
+      }
+    }
+
+    async function loadProposals(filter) {
+      const listContainer = document.getElementById('listContainer');
+      listContainer.innerHTML = '<div class="loading">Загрузка...</div>';
+
+      try {
+        const url = API_URL + '/api/proposals' + (filter && filter !== 'all' ? '?status=' + filter : '');
+
+        const res = await fetch(url, {
+          headers: { 'X-Init-Data': tg ? tg.initData : '' }
+        });
+
+        if (res.status === 403) {
+          listContainer.innerHTML = '<div class="loading">⛔ Нет доступа</div>';
+          return;
+        }
+
+        const data = await res.json();
+        allProposals = data.proposals || [];
+        renderList(filter);
+      } catch (e) {
+        listContainer.innerHTML = '<div class="empty">Ошибка загрузки 😢</div>';
+        console.error(e);
+      }
+    }
+
+    function renderList(filter) {
+      const listContainer = document.getElementById('listContainer');
+
+      if (allProposals.length === 0) {
+        listContainer.innerHTML = '<div class="empty">Пусто 😢</div>';
+        return;
+      }
+
+      let html = '';
+      allProposals.forEach(p => {
+        const statusClass = p.status;
+        const author = p.username ? '@' + p.username : 'ID ' + p.user_id;
+        const date = new Date(p.created_at).toLocaleString('ru-RU', {
+          day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+        });
+
+        html += '<div class="card ' + statusClass + '">';
+        html += '<div class="card-header">';
+        html += '<div class="card-author">' + escapeHtml(author) + '</div>';
+        html += '<div class="card-id">#' + p.id + '</div>';
+        html += '</div>';
+        html += '<div class="card-text">' + escapeHtml(p.text) + '</div>';
+        html += '<div class="card-date">' + date + '</div>';
+
+        if (p.status === 'pending') {
+          html += '<div class="card-actions">';
+          html += '<button class="action-btn approve-btn" data-id="' + p.id + '" data-action="approve">✅ Принять</button>';
+          html += '<button class="action-btn reject-btn" data-id="' + p.id + '" data-action="reject">❌ Отклонить</button>';
+          html += '</div>';
+        } else {
+          const label = p.status === 'approved' ? '✅ Принято' : '❌ Отклонено';
+          html += '<span class="status-badge ' + statusClass + '">' + label + '</span>';
+        }
+
+        html += '</div>';
+      });
+
+      listContainer.innerHTML = html;
+
+      listContainer.querySelectorAll('.action-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          decide(btn.dataset.id, btn.dataset.action, btn);
+        });
+      });
+    }
+
+    async function decide(proposalId, action, btnElement) {
+      btnElement.disabled = true;
+
+      try {
+        const res = await fetch(API_URL + '/api/proposals/decide', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Init-Data': tg ? tg.initData : ''
+          },
+          body: JSON.stringify({
+            proposalId: parseInt(proposalId, 10),
+            action: action
+          })
+        });
+        const data = await res.json();
+
+        if (data.ok) {
+          if (tg && tg.HapticFeedback) {
+            tg.HapticFeedback.notificationOccurred('success');
+          }
+          loadStats();
+          loadProposals(currentTab);
+        } else {
+          alert('Ошибка: ' + (data.error || 'unknown'));
+          btnElement.disabled = false;
+        }
+      } catch (e) {
+        console.error('Decide error:', e);
+        alert('Ошибка сети');
+        btnElement.disabled = false;
+      }
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Автообновление каждые 15 секунд, если мы в админ-панели
+    setInterval(() => {
+      if (isAdmin && currentTab !== 'write') {
+        loadStats();
+        loadProposals(currentTab);
+      }
+    }, 15000);
+  </script>
+</body>
+</html>
