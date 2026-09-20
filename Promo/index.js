@@ -39,10 +39,10 @@ export default {
     text: `📩 *Новое предложение #${proposalId}*\n\nОт: @${username || userId}\n\n${text}`,
     parse_mode: 'Markdown',
     reply_markup: {
-      inline_keyboard: [[
+      inline_keyboard: [
                 { text: '✅ Принять', callback_data: `approve_${proposalId}_${userId}` },
                 { text: '❌ Отклонить', callback_data: `reject_${proposalId}_${userId}` }
-    ]];
+    ]
     }
   })
 });
