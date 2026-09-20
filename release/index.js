@@ -164,7 +164,7 @@ async function handleStart(message, env) {
     {
       inline_keyboard: [[
         // ⚠️ ЗАМЕНИ на URL своего мини-приложения
-        { text: '🚀 Открыть приложение', web_app: { url: 'https://mark213364.github.io/main/index.html' } }
+        { text: '🚀 Открыть приложение', web_app: { url: 'https://mark213364.github.io/main/release/index.html' } }
       ]]
     }
   );
