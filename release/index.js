@@ -13,12 +13,14 @@ const COIN_EMOJI = '🪙';
 // ТЕМЫ
 // ============================================================
 const THEMES = {
-  classic: {
+    classic: {
     id: 'classic', name: 'Классика', icon: '🎨',
-    desc: 'Сине-фиолетовый градиент', price: 0,
-    bg: 'linear-gradient(135deg, #0a0e27 0%, #1a1a4e 50%, #4a1a6b 100%)',
-    btn: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-    shadow: 'rgba(168, 85, 247, 0.5)', accent: '#a855f7',
+    desc: 'Тема Telegram по умолчанию', price: 0,
+    bg: null,          // ← null = использовать тему Telegram
+    btn: null,
+    shadow: null,
+    accent: null,
+    isSystem: true,    // ← флаг: это системная тема
   },
   ocean: {
     id: 'ocean', name: 'Океан', icon: '🌊',
