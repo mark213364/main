@@ -1,0 +1,8 @@
+name = "chatpromo"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "chatpromo"
+database_id = "14204aaf-50e4-4e92-86af-9f69256b0877"
