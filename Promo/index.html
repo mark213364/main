@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Панель предложений</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    html { height: 100%; }
+
+    body {
+      min-height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #ffffff;
+      background: linear-gradient(135deg, #0a0e27 0%, #1a1a4e 50%, #4a1a6b 100%);
+      background-attachment: fixed;
+      overflow-x: hidden;
+    }
+
+    .header {
+      position: sticky;
+      top: 0;
+      background: rgba(10, 14, 39, 0.9);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(168, 85, 247, 0.3);
+      padding: 12px 16px;
+      z-index: 10;
+    }
+
+    .header-title {
+      font-size: 18px;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 10px;
+      color: #c084fc;
+    }
+
+    .stats {
+      display: flex;
+      justify-content: space-around;
+      gap: 6px;
+    }
+
+    .stat {
+      flex: 1;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(168, 85, 247, 0.2);
+      border-radius: 10px;
+      padding: 6px 4px;
+    }
+
+    .stat-value {
+      font-size: 16px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .stat-label {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.6);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat.pending .stat-value { color: #fbbf24; }
+    .stat.approved .stat-value { color: #22c55e; }
+    .stat.rejected .stat-value { color: #ef4444; }
+
+    .tabs {
+      display: flex;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 8px 4px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(168, 85, 247, 0.2);
+      border-radius: 8px;
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 12px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .tab.active {
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      color: #ffffff;
+      border-color: transparent;
+    }
+
+    .list {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(168, 85, 247, 0.2);
+      border-radius: 16px;
+      padding: 14px;
+      transition: transform 0.15s ease;
+    }
+
+    .card:active { transform: scale(0.99); }
+
+    .card.approved {
+      border-color: rgba(34, 197, 94, 0.5);
+      background: rgba(34, 197, 94, 0.08);
+    }
+
+    .card.rejected {
+      border-color: rgba(239, 68, 68, 0.5);
+      background: rgba(239, 68, 68, 0.08);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      gap: 8px;
+    }
+
+    .card-author {
+      font-size: 13px;
+      font-weight: 700;
+      color: #c084fc;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .card-id {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.4);
+      flex-shrink: 0;
+    }
+
+    .card-text {
+      font-size: 14px;
+      line-height: 1.4;
+      color: #ffffff;
+      word-break: break-word;
+      margin-bottom: 12px;
+      white-space: pre-wrap;
+    }
+
+    .card-date {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.4);
+      margin-bottom: 10px;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: transform 0.1s ease, opacity 0.2s ease;
+    }
+
+    .btn:active { transform: scale(0.96); }
+
+    .btn-approve {
+      background: linear-gradient(135deg, #16a34a, #22c55e);
+      color: #ffffff;
+    }
+
+    .btn-reject {
+      background: linear-gradient(135deg, #dc2626, #ef4444);
+      color: #ffffff;
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .status-badge.approved {
+      background: rgba(34, 197, 94, 0.2);
+      color: #22c55e;
+    }
+
+    .status-badge.rejected {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+    }
+
+    .loading, .empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 15px;
+    }
+
+    .no-access {
+      text-align: center;
+      padding: 80px 20px;
+      color: #ef4444;
+      font-size: 18px;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-title">📋 Панель предложений</div>
+    <div class="stats" id="stats">
+      <div class="stat">
+        <div class="stat-value" id="statTotal">—</div>
+        <div class="stat-label">Всего</div>
+      </div>
+      <div class="stat pending">
+        <div class="stat-value" id="statPending">—</div>
+        <div class="stat-label">Ждут</div>
+      </div>
+      <div class="stat approved">
+        <div class="stat-value" id="statApproved">—</div>
+        <div class="stat-label">Принято</div>
+      </div>
+      <div class="stat rejected">
+        <div class="stat-value" id="statRejected">—</div>
+        <div class="stat-label">Отклонено</div>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="tab active" data-filter="all">Все</button>
+      <button class="tab" data-filter="pending">Ждут</button>
+      <button class="tab" data-filter="approved">Принято</button>
+      <button class="tab" data-filter="rejected">Отклонено</button>
+    </div>
+  </div>
+
+  <div class="list" id="list">
+    <div class="loading">Загрузка...</div>
+  </div>
+
+  <script>
+    const tg = window.Telegram && window.Telegram.WebApp
+      ? window.Telegram.WebApp
+      : null;
+
+    if (tg) {
+      tg.ready();
+      tg.expand();
+    }
+
+    // ⚠️ ЗАМЕНИ на URL своего воркера chatpromo (БЕЗ слэша в конце!)
+    const API_URL = 'https://chatpromo.g3316464.workers.dev';
+
+    let allProposals = [];
+    let currentFilter = 'all';
+
+    // ===== Загрузка статистики =====
+    async function loadStats() {
+      try {
+        const res = await fetch(API_URL + '/api/stats', {
+          headers: { 'X-Init-Data': tg ? tg.initData : '' }
+        });
+        if (!res.ok) return;
+
+        const data = await res.json();
+        document.getElementById('statTotal').textContent = data.total || 0;
+        document.getElementById('statPending').textContent = data.pending || 0;
+        document.getElementById('statApproved').textContent = data.approved || 0;
+        document.getElementById('statRejected').textContent = data.rejected || 0;
+      } catch (e) {
+        console.error('Stats error:', e);
+      }
+    }
+
+    // ===== Загрузка предложений =====
+    async function loadProposals() {
+      const list = document.getElementById('list');
+
+      try {
+        const res = await fetch(API_URL + '/api/proposals', {
+          headers: { 'X-Init-Data': tg ? tg.initData : '' }
+        });
+
+        if (res.status === 403) {
+          list.innerHTML = '<div class="no-access">⛔ Нет доступа</div>';
+          return;
+        }
+
+        const data = await res.json();
+        allProposals = data.proposals || [];
+        renderList();
+      } catch (e) {
+        list.innerHTML = '<div class="empty">Ошибка загрузки 😢</div>';
+        console.error(e);
+      }
+    }
+
+    // ===== Отрисовка =====
+    function renderList() {
+      const list = document.getElementById('list');
+
+      let filtered = allProposals;
+      if (currentFilter !== 'all') {
+        filtered = allProposals.filter(p => p.status === currentFilter);
+      }
+
+      if (filtered.length === 0) {
+        list.innerHTML = '<div class="empty">Пусто 😢</div>';
+        return;
+      }
+
+      let html = '';
+      filtered.forEach(p => {
+        const statusClass = p.status === 'approved' ? 'approved'
+                          : p.status === 'rejected' ? 'rejected' : '';
+        const author = p.username ? '@' + p.username : 'ID ' + p.user_id;
+        const date = new Date(p.created_at).toLocaleString('ru-RU', {
+          day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+        });
+
+        html += '<div class="card ' + statusClass + '">';
+        html += '<div class="card-header">';
+        html += '<div class="card-author">' + escapeHtml(author) + '</div>';
+        html += '<div class="card-id">#' + p.id + '</div>';
+        html += '</div>';
+        html += '<div class="card-text">' + escapeHtml(p.text) + '</div>';
+        html += '<div class="card-date">' + date + '</div>';
+
+        if (p.status === 'pending') {
+          html += '<div class="card-actions">';
+          html += '<button class="btn btn-approve" data-id="' + p.id + '" data-action="approve">✅ Принять</button>';
+          html += '<button class="btn btn-reject" data-id="' + p.id + '" data-action="reject">❌ Отклонить</button>';
+          html += '</div>';
+        } else {
+          const label = p.status === 'approved' ? '✅ Принято' : '❌ Отклонено';
+          html += '<span class="status-badge ' + statusClass + '">' + label + '</span>';
+        }
+
+        html += '</div>';
+      });
+
+      list.innerHTML = html;
+
+      // Навешиваем обработчики
+      list.querySelectorAll('.btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          decide(btn.dataset.id, btn.dataset.action, btn);
+        });
+      });
+    }
+
+    // ===== Принять/Отклонить =====
+    async function decide(proposalId, action, btnElement) {
+      btnElement.disabled = true;
+
+      try {
+        const res = await fetch(API_URL + '/api/proposals/decide', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Init-Data': tg ? tg.initData : ''
+          },
+          body: JSON.stringify({
+            proposalId: parseInt(proposalId, 10),
+            action: action
+          })
+        });
+        const data = await res.json();
+
+        if (data.ok) {
+          if (tg && tg.HapticFeedback) {
+            tg.HapticFeedback.notificationOccurred('success');
+          }
+
+          // Обновляем локально
+          const p = allProposals.find(x => x.id === parseInt(proposalId, 10));
+          if (p) p.status = data.status;
+
+          renderList();
+          loadStats();
+        } else {
+          alert('Ошибка: ' + (data.error || 'unknown'));
+          btnElement.disabled = false;
+        }
+      } catch (e) {
+        console.error('Decide error:', e);
+        alert('Ошибка сети');
+        btnElement.disabled = false;
+      }
+    }
+
+    // ===== Фильтры =====
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        currentFilter = tab.dataset.filter;
+        renderList();
+
+        if (tg && tg.HapticFeedback) {
+          tg.HapticFeedback.selectionChanged();
+        }
+      });
+    });
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ===== Старт =====
+    loadStats();
+    loadProposals();
+
+    // Автообновление каждые 10 секунд
+    setInterval(() => {
+      loadStats();
+      loadProposals();
+    }, 10000);
+  </script>
+</body>
+</html>
