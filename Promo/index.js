@@ -1,16 +1,12 @@
 // ============================================================
-// CHATPROMO — бот для предложений
-// ============================================================
-// 1. Пользователь пишет в боте ИЛИ в мини-аппе
-// 2. Предложение уходит админу с кнопками ✅ / ❌
-// 3. Админ нажимает → пользователю приходит ответ в чат с ботом
+// CHATPROMO — бот для предложений + админ-панель
 // ============================================================
 
 // ⚠️ ЗАМЕНИ на свой Telegram user_id
 const ADMIN_ID = 5946292761;
 
-// ⚠️ ЗАМЕНИ на URL своего мини-приложения (chatpromo.html)
-const WEBAPP_URL = 'https://mark213364.github.io/main/Promo/chatpromo.html';
+// ⚠️ ЗАМЕНИ на URL своего мини-приложения
+const WEBAPP_URL = 'https://mark213364.github.io/main/Promo/index.html';
 
 export default {
   async fetch(request, env) {
@@ -27,12 +23,10 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
-    // ===== API для мини-приложения =====
     if (path.startsWith('/api/')) {
       return handleApi(request, env, path, corsHeaders);
     }
 
-    // ===== Webhook Telegram =====
     if (request.method !== 'POST') {
       return new Response('Proposals Bot is running!', { status: 200 });
     }
@@ -57,7 +51,7 @@ export default {
 };
 
 // ============================================================
-// ОБРАБОТКА СООБЩЕНИЙ В БОТЕ
+// СООБЩЕНИЯ В БОТЕ
 // ============================================================
 
 async function handleMessage(message, env) {
@@ -65,7 +59,6 @@ async function handleMessage(message, env) {
   const username = message.from.username || null;
   const text = message.text;
 
-  // /start — показать кнопку мини-приложения
   if (text === '/start') {
     await sendMessage(env.BOT_TOKEN, userId,
       '👋 Привет!\n\n' +
@@ -73,20 +66,18 @@ async function handleMessage(message, env) {
       null,
       {
         inline_keyboard: [[
-          { text: '📝 Отправить предложение', web_app: { url: WEBAPP_URL } }
+          { text: '📝 Открыть', web_app: { url: WEBAPP_URL } }
         ]]
       });
     return new Response('OK', { status: 200 });
   }
 
-  // Если пишут текстом в чат — тоже принимаем как предложение
   await saveProposalAndNotify(userId, username, text, env);
-
   return new Response('OK', { status: 200 });
 }
 
 // ============================================================
-// СОХРАНЕНИЕ ПРЕДЛОЖЕНИЯ + УВЕДОМЛЕНИЕ АДМИНА
+// СОХРАНЕНИЕ + УВЕДОМЛЕНИЕ АДМИНА
 // ============================================================
 
 async function saveProposalAndNotify(userId, username, text, env) {
@@ -137,7 +128,7 @@ async function saveProposalAndNotify(userId, username, text, env) {
 }
 
 // ============================================================
-// ОБРАБОТКА КНОПОК «ПРИНЯТЬ» / «ОТКЛОНИТЬ»
+// КНОПКИ В ЧАТЕ БОТА
 // ============================================================
 
 async function handleCallback(cb, env) {
@@ -166,12 +157,10 @@ async function handleCallback(cb, env) {
     ? 'Спасибо! Мы добавим это в игру в ближайшее время.'
     : 'Спасибо за идею! К сожалению, сейчас мы не можем её реализовать.';
 
-  const userText =
-    title + '\n\n' + body + '\n\n' + '_Предложение #' + proposalId + '_';
+  await sendMessage(env.BOT_TOKEN, userId,
+    title + '\n\n' + body + '\n\n_Предложение #' + proposalId + '_',
+    'Markdown');
 
-  await sendMessage(env.BOT_TOKEN, userId, userText, 'Markdown');
-
-  // Убираем кнопки из сообщения админа
   await fetch(
     'https://api.telegram.org/bot' + env.BOT_TOKEN + '/editMessageReplyMarkup',
     {
@@ -185,14 +174,14 @@ async function handleCallback(cb, env) {
     }
   );
 
-  const verdict = isApproved ? 'принято' : 'отклонено';
-  await answerCallback(env.BOT_TOKEN, cb.id, 'Статус: ' + verdict);
+  await answerCallback(env.BOT_TOKEN, cb.id,
+    'Статус: ' + (isApproved ? 'принято' : 'отклонено'));
 
   return new Response('OK', { status: 200 });
 }
 
 // ============================================================
-// API ДЛЯ МИНИ-ПРИЛОЖЕНИЯ
+// API
 // ============================================================
 
 async function handleApi(request, env, path, corsHeaders) {
@@ -202,12 +191,10 @@ async function handleApi(request, env, path, corsHeaders) {
     return json({ error: 'unauthorized' }, 401, corsHeaders);
   }
 
-  // ===== POST /api/send — отправить предложение =====
+  // ===== POST /api/send — отправить предложение (для всех) =====
   if (path === '/api/send' && request.method === 'POST') {
     let body;
-    try {
-      body = await request.json();
-    } catch {
+    try { body = await request.json(); } catch {
       return json({ error: 'invalid body' }, 400, corsHeaders);
     }
 
@@ -220,7 +207,6 @@ async function handleApi(request, env, path, corsHeaders) {
       return json({ error: 'too_long', message: 'Максимум 1000 символов' }, 400, corsHeaders);
     }
 
-    // Достаём username из initData
     const initData = request.headers.get('X-Init-Data');
     const params = new URLSearchParams(initData);
     const user = JSON.parse(params.get('user') || '{}');
@@ -233,6 +219,108 @@ async function handleApi(request, env, path, corsHeaders) {
     }
 
     return json({ ok: true, proposalId: proposalId }, 200, corsHeaders);
+  }
+
+  // ===== Всё ниже — только для админа =====
+
+  // GET /api/proposals?status=... — список с фильтром
+  if (path === '/api/proposals' && request.method === 'GET') {
+    if (userId !== ADMIN_ID) {
+      return json({ error: 'forbidden' }, 403, corsHeaders);
+    }
+
+    const statusFilter = url_search_params => {}; // заглушка, чтобы не мешать
+
+    const urlObj = new URL(request.url);
+    const filter = urlObj.searchParams.get('status');
+
+    let query = `SELECT id, user_id, username, text, status, created_at
+                 FROM proposals`;
+    const params = [];
+
+    if (filter === 'pending' || filter === 'approved' || filter === 'rejected') {
+      query += ' WHERE status = ?';
+      params.push(filter);
+    }
+
+    query += ' ORDER BY created_at DESC LIMIT 200';
+
+    const stmt = env.DB.prepare(query);
+    const result = params.length > 0
+      ? await stmt.bind(...params).all()
+      : await stmt.all();
+
+    return json({ proposals: result.results }, 200, corsHeaders);
+  }
+
+  // GET /api/stats — статистика
+  if (path === '/api/stats' && request.method === 'GET') {
+    if (userId !== ADMIN_ID) {
+      return json({ error: 'forbidden' }, 403, corsHeaders);
+    }
+
+    const row = await env.DB.prepare(
+      `SELECT
+         COUNT(*) AS total,
+         SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending,
+         SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) AS approved,
+         SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) AS rejected
+       FROM proposals`
+    ).first();
+
+    return json({
+      total: row.total || 0,
+      pending: row.pending || 0,
+      approved: row.approved || 0,
+      rejected: row.rejected || 0
+    }, 200, corsHeaders);
+  }
+
+  // POST /api/proposals/decide — принять/отклонить
+  if (path === '/api/proposals/decide' && request.method === 'POST') {
+    if (userId !== ADMIN_ID) {
+      return json({ error: 'forbidden' }, 403, corsHeaders);
+    }
+
+    let body;
+    try { body = await request.json(); } catch {
+      return json({ error: 'invalid body' }, 400, corsHeaders);
+    }
+
+    const proposalId = parseInt(body.proposalId, 10);
+    const action = body.action;
+
+    if (!proposalId || !action) {
+      return json({ error: 'invalid params' }, 400, corsHeaders);
+    }
+
+    const status = action === 'approve' ? 'approved' : 'rejected';
+
+    const proposal = await env.DB.prepare(
+      'SELECT user_id FROM proposals WHERE id = ?'
+    ).bind(proposalId).first();
+
+    if (!proposal) {
+      return json({ error: 'not found' }, 404, corsHeaders);
+    }
+
+    await env.DB.prepare(
+      'UPDATE proposals SET status = ? WHERE id = ?'
+    ).bind(status, proposalId).run();
+
+    const isApproved = action === 'approve';
+    const title = isApproved
+      ? '✅ *Твоё предложение принято!*'
+      : '❌ *Твоё предложение отклонено*';
+    const bodyText = isApproved
+      ? 'Спасибо! Мы добавим это в игру в ближайшее время.'
+      : 'Спасибо за идею! К сожалению, сейчас мы не можем её реализовать.';
+
+    await sendMessage(env.BOT_TOKEN, proposal.user_id,
+      title + '\n\n' + bodyText + '\n\n_Предложение #' + proposalId + '_',
+      'Markdown');
+
+    return json({ ok: true, status: status }, 200, corsHeaders);
   }
 
   return json({ error: 'not found' }, 404, corsHeaders);
