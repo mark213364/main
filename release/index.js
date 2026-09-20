@@ -7,20 +7,17 @@ const ADMIN_ID = 5946292761;
 // ============================================================
 // ВАЛЮТА
 // ============================================================
-const COIN_EMOJI = '🪙';
+const COIN_EMOJI = '💰';
 
 // ============================================================
 // ТЕМЫ
 // ============================================================
 const THEMES = {
-    classic: {
+  classic: {
     id: 'classic', name: 'Классика', icon: '🎨',
     desc: 'Тема Telegram по умолчанию', price: 0,
-    bg: null,          // ← null = использовать тему Telegram
-    btn: null,
-    shadow: null,
-    accent: null,
-    isSystem: true,    // ← флаг: это системная тема
+    bg: null, btn: null, shadow: null, accent: null,
+    isSystem: true,
   },
   ocean: {
     id: 'ocean', name: 'Океан', icon: '🌊',
@@ -91,10 +88,7 @@ const BONUSES = {
 // ПРОМОКОДЫ
 // ============================================================
 const PROMOS = {
-  'FREE500K': {
-    code: 'FREE500K',
-    reward: 500000,
-  },
+  'FREE500К': { code: 'FREE500К', reward: 500000 },
 };
 
 // ============================================================
@@ -169,7 +163,8 @@ async function handleStart(message, env) {
     `👋 Привет, ${name}!\nТекущий счёт: *${result?.count ?? 0}* ${COIN_EMOJI}\n\nОткрой приложение 👇`,
     {
       inline_keyboard: [[
-        { text: '🚀 Открыть приложение', web_app: { url: 'https://mark213364.github.io/main/release/index.html' } }
+        // ⚠️ ЗАМЕНИ на URL своего мини-приложения
+        { text: '🚀 Открыть приложение', web_app: { url: 'https://mark213364.github.io/main/index.html' } }
       ]]
     }
   );
@@ -410,7 +405,7 @@ async function handleApi(request, env, path, corsHeaders) {
 
     const now = Date.now();
 
-    // ===== ПРЕМИУМ =====
+    // ПРЕМИУМ
     if (bonusId === 'premium') {
       const userRow = await env.DB.prepare(
         'SELECT count, is_premium FROM counters WHERE chat_id = ?'
@@ -439,7 +434,7 @@ async function handleApi(request, env, path, corsHeaders) {
       return json({ ok: true, newCount, bonus }, 200, corsHeaders);
     }
 
-    // ===== МНОЖИТЕЛИ =====
+    // МНОЖИТЕЛИ
     const active = await env.DB.prepare(
       `SELECT id FROM purchases
        WHERE chat_id = ? AND item_id = ?
