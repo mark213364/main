@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Предложить идею</title>
+  <title>Предложения</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -15,182 +15,303 @@
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: var(--tg-theme-bg-color, #ffffff);
       color: var(--tg-theme-text-color, #000000);
-      overflow-x: hidden;
+      padding-bottom: 70px;
     }
 
-    .container {
+    .hidden { display: none !important; }
+
+    /* ============================================================
+       ОБЩЕЕ
+       ============================================================ */
+
+    .screen {
+      padding: 16px;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .page-title {
+      font-size: 20px;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 16px;
+      color: var(--tg-theme-text-color, #000000);
+    }
+
+    /* ============================================================
+       ФОРМА ОТПРАВКИ
+       ============================================================ */
+
+    .form-container {
       padding: 20px;
       max-width: 600px;
       margin: 0 auto;
       display: flex;
       flex-direction: column;
-      min-height: 100vh;
+      min-height: calc(100vh - 70px);
     }
 
-    .header {
-      text-align: center;
-      margin-bottom: 24px;
-    }
-
-    .header-icon {
-      font-size: 64px;
-      line-height: 1;
-      margin-bottom: 12px;
-    }
-
+    .header { text-align: center; margin-bottom: 24px; }
+    .header-icon { font-size: 64px; line-height: 1; margin-bottom: 12px; }
     .header-title {
-      font-size: 24px;
-      font-weight: 700;
+      font-size: 24px; font-weight: 700;
       color: var(--tg-theme-text-color, #000000);
       margin-bottom: 8px;
     }
-
     .header-subtitle {
-      font-size: 14px;
+      font-size: 14px; line-height: 1.4;
       color: var(--tg-theme-hint-color, #999999);
-      line-height: 1.4;
     }
 
-    .field {
-      margin-bottom: 16px;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
-
+    .field { margin-bottom: 16px; flex: 1; display: flex; flex-direction: column; }
     .field-label {
-      font-size: 14px;
-      font-weight: 600;
+      font-size: 14px; font-weight: 600;
       color: var(--tg-theme-text-color, #000000);
       margin-bottom: 8px;
     }
 
     .textarea {
-      flex: 1;
-      min-height: 180px;
-      padding: 14px;
+      flex: 1; min-height: 180px; padding: 14px;
       background: var(--tg-theme-secondary-bg-color, #f0f0f0);
       color: var(--tg-theme-text-color, #000000);
       border: 1px solid var(--tg-theme-hint-color, #e0e0e0);
       border-radius: 12px;
-      font-size: 15px;
-      font-family: inherit;
-      line-height: 1.4;
-      resize: none;
-      outline: none;
-      transition: border-color 0.2s ease;
+      font-size: 15px; font-family: inherit; line-height: 1.4;
+      resize: none; outline: none;
     }
-
-    .textarea:focus {
-      border-color: var(--tg-theme-button-color, #2ea6ff);
-    }
-
-    .textarea::placeholder {
-      color: var(--tg-theme-hint-color, #999999);
-    }
+    .textarea:focus { border-color: var(--tg-theme-button-color, #2ea6ff); }
+    .textarea::placeholder { color: var(--tg-theme-hint-color, #999999); }
 
     .counter {
-      text-align: right;
-      font-size: 12px;
+      text-align: right; font-size: 12px;
       color: var(--tg-theme-hint-color, #999999);
       margin-top: 6px;
     }
-
     .counter.over { color: #ef4444; }
 
     .btn {
-      width: 100%;
-      padding: 16px;
+      width: 100%; padding: 16px;
       background: var(--tg-theme-button-color, #2ea6ff);
       color: var(--tg-theme-button-text-color, #ffffff);
-      border: none;
-      border-radius: 12px;
-      font-size: 16px;
-      font-weight: 700;
-      font-family: inherit;
-      cursor: pointer;
-      transition: transform 0.1s ease, opacity 0.2s ease;
+      border: none; border-radius: 12px;
+      font-size: 16px; font-weight: 700;
+      font-family: inherit; cursor: pointer;
       margin-top: 8px;
     }
-
-    .btn:active {
-      transform: scale(0.98);
-      opacity: 0.9;
-    }
-
-    .btn:disabled {
-      opacity: 0.5;
-      cursor: default;
-    }
-
-    .btn.loading { pointer-events: none; }
-
-    /* Экран успеха */
-    .success {
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 40px 20px;
-      flex: 1;
-    }
-
-    .success.active { display: flex; }
-
-    .success-icon {
-      font-size: 80px;
-      line-height: 1;
-      margin-bottom: 20px;
-      animation: pop 0.5s ease;
-    }
-
-    @keyframes pop {
-      0%   { transform: scale(0); }
-      60%  { transform: scale(1.2); }
-      100% { transform: scale(1); }
-    }
-
-    .success-title {
-      font-size: 22px;
-      font-weight: 700;
-      color: var(--tg-theme-text-color, #000000);
-      margin-bottom: 12px;
-    }
-
-    .success-text {
-      font-size: 15px;
-      color: var(--tg-theme-hint-color, #999999);
-      line-height: 1.5;
-      margin-bottom: 24px;
-    }
-
-    .success-id {
-      display: inline-block;
-      padding: 6px 14px;
-      background: var(--tg-theme-secondary-bg-color, #f0f0f0);
-      border-radius: 12px;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--tg-theme-hint-color, #999999);
-      margin-bottom: 24px;
-    }
-
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.5; }
     .btn-secondary {
       background: var(--tg-theme-secondary-bg-color, #f0f0f0);
       color: var(--tg-theme-text-color, #000000);
     }
+
+    /* Экран успеха */
+    .success {
+      display: none;
+      flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 40px 20px; flex: 1;
+    }
+    .success.active { display: flex; }
+    .success-icon { font-size: 80px; margin-bottom: 20px; animation: pop 0.5s ease; }
+    @keyframes pop {
+      0% { transform: scale(0); }
+      60% { transform: scale(1.2); }
+      100% { transform: scale(1); }
+    }
+    .success-title {
+      font-size: 22px; font-weight: 700;
+      color: var(--tg-theme-text-color, #000000);
+      margin-bottom: 12px;
+    }
+    .success-text {
+      font-size: 15px; line-height: 1.5;
+      color: var(--tg-theme-hint-color, #999999);
+      margin-bottom: 24px;
+    }
+    .success-id {
+      display: inline-block; padding: 6px 14px;
+      background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+      border-radius: 12px;
+      font-size: 13px; font-weight: 600;
+      color: var(--tg-theme-hint-color, #999999);
+      margin-bottom: 24px;
+    }
+
+    /* ============================================================
+       СПИСОК ПРЕДЛОЖЕНИЙ (для админа)
+       ============================================================ */
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    .stat {
+      text-align: center;
+      background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+      border-radius: 10px;
+      padding: 8px 4px;
+    }
+    .stat-value {
+      font-size: 16px; font-weight: 700;
+      color: var(--tg-theme-text-color, #000000);
+    }
+    .stat-label {
+      font-size: 10px;
+      color: var(--tg-theme-hint-color, #999999);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 2px;
+    }
+    .stat.pending .stat-value { color: #fbbf24; }
+    .stat.approved .stat-value { color: #22c55e; }
+    .stat.rejected .stat-value { color: #ef4444; }
+
+    .list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .card {
+      background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+      border-radius: 14px;
+      padding: 14px;
+      border: 1px solid transparent;
+    }
+    .card.pending  { border-color: rgba(251, 191, 36, 0.4); }
+    .card.approved { border-color: rgba(34, 197, 94, 0.4); }
+    .card.rejected { border-color: rgba(239, 68, 68, 0.4); }
+
+    .card-header {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-bottom: 8px;
+      gap: 8px;
+    }
+    .card-author {
+      font-size: 13px; font-weight: 700;
+      color: var(--tg-theme-link-color, #2ea6ff);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .card-id {
+      font-size: 11px;
+      color: var(--tg-theme-hint-color, #999999);
+      flex-shrink: 0;
+    }
+    .card-text {
+      font-size: 14px; line-height: 1.4;
+      color: var(--tg-theme-text-color, #000000);
+      word-break: break-word; margin-bottom: 10px;
+      white-space: pre-wrap;
+    }
+    .card-date {
+      font-size: 11px;
+      color: var(--tg-theme-hint-color, #999999);
+      margin-bottom: 10px;
+    }
+
+    .card-actions { display: flex; gap: 8px; }
+
+    .action-btn {
+      flex: 1; padding: 10px;
+      border: none; border-radius: 10px;
+      font-size: 13px; font-weight: 700;
+      font-family: inherit; cursor: pointer;
+    }
+    .action-btn:active { transform: scale(0.96); }
+    .action-btn:disabled { opacity: 0.4; }
+    .approve-btn { background: #22c55e; color: #ffffff; }
+    .reject-btn  { background: #ef4444; color: #ffffff; }
+
+    .status-badge {
+      display: inline-block; padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase;
+    }
+    .status-badge.pending  { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+    .status-badge.approved { background: rgba(34, 197, 94, 0.2);  color: #22c55e; }
+    .status-badge.rejected { background: rgba(239, 68, 68, 0.2);  color: #ef4444; }
+
+    .loading, .empty {
+      text-align: center; padding: 60px 20px;
+      color: var(--tg-theme-hint-color, #999999);
+      font-size: 15px;
+    }
+
+    /* ============================================================
+       НИЖНЯЯ НАВИГАЦИЯ
+       ============================================================ */
+
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      background: var(--tg-theme-bg-color, #ffffff);
+      border-top: 1px solid var(--tg-theme-secondary-bg-color, #f0f0f0);
+      padding: 6px 0;
+      padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+      z-index: 100;
+    }
+
+    .nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      background: none;
+      border: none;
+      padding: 8px 4px;
+      color: var(--tg-theme-hint-color, #999999);
+      font-family: inherit;
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: color 0.2s ease;
+      position: relative;
+    }
+
+    .nav-item.active {
+      color: var(--tg-theme-button-color, #2ea6ff);
+    }
+
+    .nav-item .icon {
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    .nav-item .badge {
+      position: absolute;
+      top: 4px;
+      right: 50%;
+      transform: translateX(14px);
+      background: #ef4444;
+      color: #ffffff;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 8px;
+      min-width: 16px;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
-  <!-- ФОРМА -->
-  <div class="container" id="formScreen">
+
+  <!-- ============================================================
+       ЭКРАН 1: ФОРМА ОТПРАВКИ (для пользователя)
+       ============================================================ -->
+  <div class="form-container hidden" id="formScreen">
     <div class="header">
       <div class="header-icon">💡</div>
       <div class="header-title">Предложить идею</div>
       <div class="header-subtitle">
-        Расскажи, что добавить или изменить в игре.<br>
-        Мы рассмотрим твоё предложение.
+        Расскажи, что добавить или изменить в игре.
       </div>
     </div>
 
@@ -208,8 +329,8 @@
     <button class="btn" id="sendBtn" disabled>Отправить</button>
   </div>
 
-  <!-- ЭКРАН УСПЕХА -->
-  <div class="success" id="successScreen">
+  <!-- Экран успеха -->
+  <div class="success hidden" id="successScreen">
     <div class="success-icon">✅</div>
     <div class="success-title">Отправлено!</div>
     <div class="success-text">
@@ -220,6 +341,69 @@
     <button class="btn btn-secondary" id="sendMoreBtn">Отправить ещё</button>
   </div>
 
+  <!-- ============================================================
+       ЭКРАН 2: АДМИН-ПАНЕЛЬ
+       ============================================================ -->
+  <div class="hidden" id="adminScreen">
+
+    <!-- Статистика -->
+    <div class="screen">
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-value" id="statTotal">—</div>
+          <div class="stat-label">Всего</div>
+        </div>
+        <div class="stat pending">
+          <div class="stat-value" id="statPending">—</div>
+          <div class="stat-label">Ждут</div>
+        </div>
+        <div class="stat approved">
+          <div class="stat-value" id="statApproved">—</div>
+          <div class="stat-label">Принято</div>
+        </div>
+        <div class="stat rejected">
+          <div class="stat-value" id="statRejected">—</div>
+          <div class="stat-label">Отклонено</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Список предложений -->
+    <div class="screen" id="listContainer">
+      <div class="loading">Загрузка...</div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       НИЖНЯЯ НАВИГАЦИЯ
+       ============================================================ -->
+  <div class="bottom-nav hidden" id="bottomNav">
+    <button class="nav-item" data-tab="write">
+      <span class="icon">📝</span>
+      <span>Написать</span>
+    </button>
+    <button class="nav-item active" data-tab="pending">
+      <span class="icon">⏳</span>
+      <span>Ждут</span>
+      <span class="badge hidden" id="badgePending">0</span>
+    </button>
+    <button class="nav-item" data-tab="approved">
+      <span class="icon">✅</span>
+      <span>Принято</span>
+    </button>
+    <button class="nav-item" data-tab="rejected">
+      <span class="icon">❌</span>
+      <span>Отклонено</span>
+    </button>
+    <button class="nav-item" data-tab="all">
+      <span class="icon">📋</span>
+      <span>Все</span>
+    </button>
+  </div>
+
+  <!-- ============================================================
+       СКРИПТ
+       ============================================================ -->
   <script>
     // ============================================================
     // 1. ИНИЦИАЛИЗАЦИЯ
@@ -237,99 +421,105 @@
     // ⚠️ ЗАМЕНИ на URL своего воркера chatpromo (БЕЗ слэша в конце!)
     const API_URL = 'https://chatpromo.g3316464.workers.dev';
 
-    const textInput = document.getElementById('textInput');
-    const counter = document.getElementById('counter');
-    const sendBtn = document.getElementById('sendBtn');
+    // ⚠️ ЗАМЕНИ на свой Telegram user_id
+    const ADMIN_ID = 5946292761;
+
+    const currentUserId = tg && tg.initDataUnsafe && tg.initDataUnsafe.user
+      ? tg.initDataUnsafe.user.id
+      : null;
+    const isAdmin = currentUserId === ADMIN_ID;
+
+    // DOM
     const formScreen = document.getElementById('formScreen');
     const successScreen = document.getElementById('successScreen');
-    const proposalIdEl = document.getElementById('proposalId');
-    const sendMoreBtn = document.getElementById('sendMoreBtn');
+    const adminScreen = document.getElementById('adminScreen');
+    const bottomNav = document.getElementById('bottomNav');
 
-    const MAX_LENGTH = 1000;
-    const MIN_LENGTH = 3;
+    // Состояние
+    let currentTab = 'pending';
+    let allProposals = [];
 
     // ============================================================
-    // 2. UI — счётчик и состояние кнопки
+    // 2. ВЫБОР РЕЖИМА ПО РОЛИ
     // ============================================================
 
-    function updateUI() {
-      const len = textInput.value.length;
-      counter.textContent = len + ' / ' + MAX_LENGTH;
-      counter.classList.toggle('over', len > MAX_LENGTH);
-
-      sendBtn.disabled = len < MIN_LENGTH || len > MAX_LENGTH;
+    if (isAdmin) {
+      adminScreen.classList.remove('hidden');
+      bottomNav.classList.remove('hidden');
+      switchTab('pending');
+    } else {
+      formScreen.classList.remove('hidden');
+      startUserForm();
     }
 
-    textInput.addEventListener('input', updateUI);
-    updateUI();
-
     // ============================================================
-    // 3. ОТПРАВКА
+    // 3. ФОРМА (для пользователя)
     // ============================================================
 
-    sendBtn.addEventListener('click', async () => {
-      const text = textInput.value.trim();
+    function startUserForm() {
+      const textInput = document.getElementById('textInput');
+      const counter = document.getElementById('counter');
+      const sendBtn = document.getElementById('sendBtn');
+      const proposalIdEl = document.getElementById('proposalId');
+      const sendMoreBtn = document.getElementById('sendMoreBtn');
 
-      if (text.length < MIN_LENGTH) {
-        if (tg && tg.showAlert) {
-          tg.showAlert('Слишком короткое предложение');
-        }
-        return;
+      const MAX_LENGTH = 1000;
+      const MIN_LENGTH = 3;
+
+      function updateUI() {
+        const len = textInput.value.length;
+        counter.textContent = len + ' / ' + MAX_LENGTH;
+        counter.classList.toggle('over', len > MAX_LENGTH);
+        sendBtn.disabled = len < MIN_LENGTH || len > MAX_LENGTH;
       }
 
-      sendBtn.disabled = true;
-      sendBtn.classList.add('loading');
-      sendBtn.textContent = 'Отправка...';
-
-      try {
-        const res = await fetch(API_URL + '/api/send', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Init-Data': tg ? tg.initData : ''
-          },
-          body: JSON.stringify({ text: text })
-        });
-
-        const data = await res.json();
-
-        if (data.ok) {
-          proposalIdEl.textContent = '#' + data.proposalId;
-          formScreen.style.display = 'none';
-          successScreen.classList.add('active');
-
-          if (tg && tg.HapticFeedback) {
-            tg.HapticFeedback.notificationOccurred('success');
-          }
-        } else {
-          if (tg && tg.showAlert) {
-            tg.showAlert(data.message || 'Ошибка отправки');
-          }
-          sendBtn.disabled = false;
-        }
-      } catch (e) {
-        console.error('Send error:', e);
-        if (tg && tg.showAlert) {
-          tg.showAlert('Ошибка сети. Попробуй позже.');
-        }
-        sendBtn.disabled = false;
-      } finally {
-        sendBtn.classList.remove('loading');
-        sendBtn.textContent = 'Отправить';
-      }
-    });
-
-    // ============================================================
-    // 4. ОТПРАВИТЬ ЕЩЁ
-    // ============================================================
-
-    sendMoreBtn.addEventListener('click', () => {
-      textInput.value = '';
+      textInput.addEventListener('input', updateUI);
       updateUI();
-      successScreen.classList.remove('active');
-      formScreen.style.display = 'flex';
-      sendBtn.disabled = true;
-    });
-  </script>
-</body>
-</html>
+
+      sendBtn.addEventListener('click', async () => {
+        const text = textInput.value.trim();
+
+        if (text.length < MIN_LENGTH) {
+          if (tg && tg.showAlert) tg.showAlert('Слишком короткое предложение');
+          return;
+        }
+
+        sendBtn.disabled = true;
+        sendBtn.textContent = 'Отправка...';
+
+        try {
+          const res = await fetch(API_URL + '/api/send', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Init-Data': tg ? tg.initData : ''
+            },
+            body: JSON.stringify({ text: text })
+          });
+
+          const data = await res.json();
+
+          if (data.ok) {
+            proposalIdEl.textContent = '#' + data.proposalId;
+            formScreen.classList.add('hidden');
+            successScreen.classList.add('active');
+            successScreen.classList.remove('hidden');
+            if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+          } else {
+            if (tg && tg.showAlert) tg.showAlert(data.message || 'Ошибка');
+            sendBtn.disabled = false;
+          }
+        } catch (e) {
+          console.error(e);
+          if (tg && tg.showAlert) tg.showAlert('Ошибка сети');
+          sendBtn.disabled = false;
+        } finally {
+          sendBtn.textContent = 'Отправить';
+        }
+      });
+
+      sendMoreBtn.addEventListener('click', () => {
+        textInput.value = '';
+        updateUI();
+        successScreen.classList.remove('active');
+       
