@@ -1025,4 +1025,174 @@
           html += '<div class="shop-item-info">';
           html += '<div class="shop-item-name">' + escapeHtml(b.name) + '</div>';
           html += '<div class="shop-item-desc">' + escapeHtml(b.desc) + '</div>';
-          html
+          html += '</div>';
+          html += '<div class="shop-item-price">' + b.price + ' 🪙</div>';
+          html += '<button class="shop-buy-btn" data-bonus="' + b.id + '"' + (btnDisabled ? ' disabled' : '') + '>' + btnText + '</button>';
+          html += '</div>';
+        });
+
+        bonusesList.innerHTML = html;
+
+        currentMultiplier = data.multiplier || 1;
+        updateMultiplierBadge();
+
+        document.querySelectorAll('[data-bonus]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            buyBonus(btn.dataset.bonus);
+          });
+        });
+      } catch (e) {
+        bonusesList.innerHTML = '<div class="empty">Ошибка загрузки 😢</div>';
+        console.error(e);
+      }
+    }
+
+    async function buyBonus(bonusId) {
+      try {
+        const res = await fetch(API_URL + '/api/bonuses/buy', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Init-Data': tg ? tg.initData : ''
+          },
+          body: JSON.stringify({ bonusId: bonusId })
+        });
+        const data = await res.json();
+
+        if (data.error === 'not_enough') {
+          if (tg && tg.showPopup) {
+            tg.showPopup({
+              title: 'Недостаточно кликов',
+              message: 'Нужно: ' + data.need + '\nУ тебя: ' + data.have,
+              buttons: [{ type: 'close' }]
+            });
+          }
+          return;
+        }
+
+        if (data.error === 'already_active') {
+          if (tg && tg.showPopup) {
+            tg.showPopup({
+              title: 'Уже активно',
+              message: 'Этот бонус уже действует',
+              buttons: [{ type: 'close' }]
+            });
+          }
+          return;
+        }
+
+        if (data.ok) {
+          count = data.newCount;
+          counterEl.textContent = count;
+          currentMultiplier = data.bonus.multiplier || 1;
+
+          if (tg && tg.showPopup) {
+            tg.showPopup({
+              title: '✅ Активировано!',
+              message: data.bonus.name + ' — действует 1 минуту',
+              buttons: [{ type: 'close' }]
+            });
+          }
+          if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+
+          startMultiplierTimer(data.expiresAt);
+          loadBonuses();
+        }
+      } catch (e) {
+        console.error('Buy bonus error:', e);
+      }
+    }
+
+    function startMultiplierTimer(expiresAt) {
+      if (multiplierTimer) clearInterval(multiplierTimer);
+
+      const update = () => {
+        const remaining = expiresAt - Date.now();
+        if (remaining <= 0) {
+          currentMultiplier = 1;
+          updateMultiplierBadge();
+          clearInterval(multiplierTimer);
+          multiplierTimer = null;
+          return;
+        }
+        updateMultiplierBadge(remaining);
+      };
+
+      update();
+      multiplierTimer = setInterval(update, 1000);
+    }
+
+    function updateMultiplierBadge(remaining) {
+      let badge = document.getElementById('multiplierBadge');
+
+      if (currentMultiplier <= 1) {
+        if (badge) badge.remove();
+        return;
+      }
+
+      if (!badge) {
+        badge = document.createElement('div');
+        badge.id = 'multiplierBadge';
+        badge.className = 'multiplier-badge';
+        const container = document.querySelector('#screen-clicker .container');
+        container.appendChild(badge);
+      }
+
+      let text = '⚡ x' + currentMultiplier;
+      if (remaining && remaining > 0) {
+        const sec = Math.ceil(remaining / 1000);
+        text += ' · ' + sec + 'с';
+      }
+      badge.textContent = text;
+    }
+
+    // ============================================================
+    // 13. НИЖНЯЯ НАВИГАЦИЯ
+    // ============================================================
+
+    document.getElementById('donateBtn').addEventListener('click', () => {
+      if (tg && tg.openTelegramLink) {
+        tg.openTelegramLink(DONATE_URL);
+      } else if (tg && tg.openLink) {
+        tg.openLink(DONATE_URL);
+      } else {
+        window.open(DONATE_URL, '_blank');
+      }
+      if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+    });
+
+    document.getElementById('channelBtn').addEventListener('click', () => {
+      if (tg && tg.openTelegramLink) {
+        tg.openTelegramLink(CHANNEL_URL);
+      } else {
+        window.open(CHANNEL_URL, '_blank');
+      }
+      if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+    });
+
+    document.getElementById('infoBtn').addEventListener('click', () => {
+      if (tg && tg.showPopup) {
+        tg.showPopup({
+          title: 'О боте',
+          message: 'BasicClickBot — простой кликер с лидербордом.\n\n' +
+                   '🎯 Жми кнопку, чтобы увеличить счёт\n' +
+                   '🛒 Покупай темы за клики\n' +
+                   '🏆 Соревнуйся с другими игроками\n' +
+                   '💝 Поддержи разработчика\n\n' +
+                   'Версия 1.0',
+          buttons: [{ type: 'close' }]
+        });
+      } else {
+        alert('BasicClickBot — кликер с лидербордом. Версия 1.0');
+      }
+      if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+    });
+
+    // ============================================================
+    // 14. СТАРТ
+    // ============================================================
+
+    loadCount();
+  </script>
+</body>
+</html>
