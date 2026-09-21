@@ -4,7 +4,7 @@
 
 const ADMIN_ID = 5946292761;
 const COIN_EMOJI = '🪙';
-const WEBAPP_URL = 'https://mark213364.github.io/main/release/index.html';
+const WEBAPP_URL = 'https://mark213364.github.io/main/index.html';
 
 // ============================================================
 // ЦВЕТА
@@ -101,11 +101,26 @@ export default {
       const update = await request.json();
       const message = update.message;
 
-      if (message && message.text === '/start') await handleStart(message, env);
-      if (message && message.text && message.text.startsWith('/reset ')) await handleReset(message, env);
-      if (message && message.text === '/wipe' && message.from.id === ADMIN_ID) await handleWipe(message, env);
-      if (message && message.text && message.text.startsWith('/give ')) await handleGive(message, env);
-      if (message && message.text && message.text.startsWith('/createpromo ')) await handleCreatePromo(message, env);
+      // Логируем для отладки
+      if (message) {
+        console.log('MESSAGE:', message.text, 'FROM:', message.from?.id);
+      }
+
+      if (message && message.text && message.text.startsWith('/start')) {
+        await handleStart(message, env);
+      }
+      if (message && message.text && message.text.startsWith('/reset ')) {
+        await handleReset(message, env);
+      }
+      if (message && message.text && message.text.startsWith('/wipe')) {
+        await handleWipe(message, env);
+      }
+      if (message && message.text && message.text.startsWith('/give ')) {
+        await handleGive(message, env);
+      }
+      if (message && message.text && message.text.startsWith('/createpromo ')) {
+        await handleCreatePromo(message, env);
+      }
 
       return new Response('OK', { status: 200 });
     } catch (e) {
@@ -120,31 +135,54 @@ export default {
 // ============================================================
 
 async function handleStart(message, env) {
-  const chatId = message.chat.id;
-  const name = [message.from.first_name, message.from.last_name]
-    .filter(Boolean).join(' ') || 'Игрок';
-  const username = message.from.username || null;
+  console.log('=== handleStart CALLED ===');
+  console.log('chatId:', message.chat.id);
+  console.log('WEBAPP_URL:', WEBAPP_URL);
+  console.log('BOT_TOKEN exists:', !!env.BOT_TOKEN);
+  console.log('DB exists:', !!env.DB);
 
-  await env.DB.prepare(
-    `INSERT INTO counters (chat_id, name, username, count)
-     VALUES (?, ?, ?, 0)
-     ON CONFLICT(chat_id) DO UPDATE SET
-       name = excluded.name,
-       username = excluded.username`
-  ).bind(chatId, name, username).run();
+  try {
+    const chatId = message.chat.id;
+    const name = [message.from.first_name, message.from.last_name]
+      .filter(Boolean).join(' ') || 'Игрок';
+    const username = message.from.username || null;
 
-  const result = await env.DB.prepare(
-    'SELECT count FROM counters WHERE chat_id = ?'
-  ).bind(chatId).first();
+    // Создаём или обновляем игрока
+    await env.DB.prepare(
+      `INSERT INTO counters (chat_id, name, username, count)
+       VALUES (?, ?, ?, 0)
+       ON CONFLICT(chat_id) DO UPDATE SET
+         name = excluded.name,
+         username = excluded.username`
+    ).bind(chatId, name, username).run();
 
-  await sendMessage(env.BOT_TOKEN, chatId,
-    `👋 Привет, ${name}!\nТекущий счёт: *${result?.count ?? 0}* ${COIN_EMOJI}\n\nОткрой приложение 👇`,
-    {
-      inline_keyboard: [[
-        { text: '🚀 Открыть приложение', web_app: { url: WEBAPP_URL } }
-      ]]
+    console.log('DB insert OK');
+
+    const result = await env.DB.prepare(
+      'SELECT count FROM counters WHERE chat_id = ?'
+    ).bind(chatId).first();
+
+    console.log('DB select OK, count:', result?.count);
+
+    const sendResult = await sendMessage(env.BOT_TOKEN, chatId,
+      `👋 Привет, ${name}!\nТекущий счёт: *${result?.count ?? 0}* ${COIN_EMOJI}\n\nОткрой приложение 👇`,
+      'Markdown',
+      {
+        inline_keyboard: [[
+          { text: '🚀 Открыть приложение', web_app: { url: WEBAPP_URL } }
+        ]]
+      }
+    );
+
+    const sendData = await sendResult.json();
+    console.log('SEND RESULT:', JSON.stringify(sendData));
+
+    if (!sendData.ok) {
+      console.error('sendMessage FAILED:', sendData.description);
     }
-  );
+  } catch (e) {
+    console.error('handleStart error:', e.message, e.stack);
+  }
 }
 
 async function handleReset(message, env) {
@@ -166,6 +204,10 @@ async function handleReset(message, env) {
 }
 
 async function handleWipe(message, env) {
+  if (message.from.id !== ADMIN_ID) {
+    await sendMessage(env.BOT_TOKEN, message.chat.id, '⛔ Нет доступа');
+    return;
+  }
   const now = Date.now();
   await env.DB.prepare(
     'UPDATE counters SET count = 0, color = "default", skin = "default", is_premium = 0, reset_at = ?'
@@ -180,9 +222,11 @@ async function handleWipe(message, env) {
 }
 
 // ============================================================
-// /give <user_id> <count> — начислить клики (только админ)
+// /give <user_id> <count>
 // ============================================================
 async function handleGive(message, env) {
+  console.log('=== handleGive CALLED ===', message.text);
+
   if (message.from.id !== ADMIN_ID) {
     await sendMessage(env.BOT_TOKEN, message.chat.id, '⛔ Нет доступа');
     return;
@@ -196,11 +240,6 @@ async function handleGive(message, env) {
     await sendMessage(env.BOT_TOKEN, message.chat.id,
       '❌ Использование: `/give <user_id> <count>`\n\nПример: `/give 5946292761 5000`',
       'Markdown');
-    return;
-  }
-
-  if (amount === 0) {
-    await sendMessage(env.BOT_TOKEN, message.chat.id, '❌ Количество не может быть 0');
     return;
   }
 
@@ -238,7 +277,7 @@ async function handleGive(message, env) {
 }
 
 // ============================================================
-// /createpromo <code> <reward> [max_uses] — создать промокод
+// /createpromo <code> <reward> [max_uses]
 // ============================================================
 async function handleCreatePromo(message, env) {
   if (message.from.id !== ADMIN_ID) {
@@ -679,11 +718,14 @@ async function sendMessage(token, chatId, text, parseMode, keyboard) {
   const body = { chat_id: chatId, text };
   if (parseMode) body.parse_mode = parseMode;
   if (keyboard) body.reply_markup = keyboard;
-  return fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+
+  const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   });
+
+  return res;
 }
 
 async function verifyInitData(initData, botToken) {
