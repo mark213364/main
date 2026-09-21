@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>TapllyBot</title>
+  <title>BasicClickBot</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -504,8 +504,7 @@
   </div>
 
   <script>
-    // ⚙️ НАСТРОЙКИ
-    const API_URL = 'https://broad-boat-0443.g3316464.workers.dev';
+    const API_URL = 'https://basicclickbot.g3316464.workers.dev';
     const DONATE_URL = 'https://t.me/Kwbejdif';
     const CHANNEL_URL = 'https://t.me/твой_канал';
     const COIN = '🪙';
@@ -532,6 +531,7 @@
     let activeColor = 'default';
     let activeSkin = 'default';
     let toastTimer = null;
+    let lastResetAt = 0;
 
     function showToast(icon, text) {
       const toast = document.getElementById('toast');
@@ -631,6 +631,7 @@
         const data = await res.json();
         count = data.count || 0;
         counterEl.textContent = formatNumber(count);
+        lastResetAt = data.resetAt || 0;
         await loadColorsSilent();
         await loadSkinsSilent();
         if (data.color) applyColor(data.color);
@@ -1087,7 +1088,6 @@
             applySkin(data.skin.id, data.skin.icon);
             showToast('🎨', data.skin.name + ' применён');
             if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-
             document.querySelectorAll('#inventoryList [data-inv]').forEach(b => {
               const bid = b.dataset.inv;
               const btype = b.dataset.type;
@@ -1117,7 +1117,6 @@
             applyColor(data.color.id);
             showToast('🎨', data.color.name + ' применён');
             if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-
             document.querySelectorAll('#inventoryList [data-inv]').forEach(b => {
               const bid = b.dataset.inv;
               const btype = b.dataset.type;
@@ -1139,7 +1138,7 @@
       } catch (e) { console.error('Activate error:', e); }
     }
 
-    // ЛЁГКИЙ ТАЙМЕР (без запросов)
+    // ЛЁГКИЙ ТАЙМЕР
     setInterval(() => {
       const now = Date.now();
 
@@ -1179,45 +1178,43 @@
       });
     }, 500);
 
-    // АВТООБНОВЛЕНИЕ раз в 1 секунду
+    // АВТООБНОВЛЕНИЕ — только проверка reset_at
     setInterval(async () => {
-      const shopScreen = document.getElementById('screen-shop');
       const lbScreen = document.getElementById('screen-leaderboard');
 
-      // На кликере — обновляем счёт, множитель, тему
-      if (!shopScreen.classList.contains('active') && !lbScreen.classList.contains('active')) {
-        try {
-          const res = await fetch(API_URL + '/api/me', {
-            headers: { 'X-Init-Data': tg ? tg.initData : '' }
-          });
-          const data = await res.json();
-          if (data.count !== count) {
-            count = data.count;
-            counterEl.textContent = formatNumber(count);
-          }
-          if (data.multiplier !== undefined) {
-            currentMultiplier = data.multiplier || 1;
-            updateMultiplierBadge();
-          }
-          // Сброс темы, если админ сделал /wipe
-          if (data.color !== activeColor) {
-            applyColor(data.color);
-          }
-          if (data.skin !== activeSkin) {
-            const skins = window._skinsCache || {};
-            const skinData = skins[data.skin];
-            applySkin(data.skin, skinData ? skinData.icon : null);
-          }
-        } catch (e) {}
-      }
+      try {
+        const res = await fetch(API_URL + '/api/me', {
+          headers: { 'X-Init-Data': tg ? tg.initData : '' }
+        });
+        const data = await res.json();
 
-      // На рейтинге — тихо обновляем
+        if (data.resetAt && data.resetAt !== lastResetAt) {
+          lastResetAt = data.resetAt;
+
+          count = data.count || 0;
+          counterEl.textContent = formatNumber(count);
+
+          currentMultiplier = data.multiplier || 1;
+          updateMultiplierBadge();
+
+          applyColor(data.color || 'default');
+          const skins = window._skinsCache || {};
+          const skinData = skins[data.skin];
+          applySkin(data.skin, skinData ? skinData.icon : null);
+
+          showToast('🔄', 'Данные обновлены');
+
+          const shopScreen = document.getElementById('screen-shop');
+          if (shopScreen.classList.contains('active')) loadCustomization();
+          if (lbScreen.classList.contains('active')) loadLeaderboard();
+        }
+      } catch (e) {}
+
       if (lbScreen.classList.contains('active')) {
         loadLeaderboard();
       }
     }, 1000);
 
-    // ПРОМОКОД
     const promoBtn = document.getElementById('promoBtn');
     const promoInput = document.getElementById('promoInput');
     if (promoBtn) {
@@ -1260,7 +1257,7 @@
       if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     });
     document.getElementById('infoBtn').addEventListener('click', () => {
-      showToast('ℹ️', 'TapllyBot v2.0');
+      showToast('ℹ️', 'BasicClickBot v2.0');
       if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     });
 
