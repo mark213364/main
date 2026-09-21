@@ -6,12 +6,7 @@
   <title>BasicClickBot</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
     :root {
       --accent-color: var(--tg-theme-button-color, #2ea6ff);
@@ -37,20 +32,17 @@
       user-select: none;
       -webkit-user-select: none;
       overflow: hidden;
+      transition: background 0.3s ease;
     }
 
     #particles {
-      position: fixed;
-      top: 0; left: 0;
+      position: fixed; top: 0; left: 0;
       width: 100%; height: 100%;
-      pointer-events: none;
-      z-index: 1;
+      pointer-events: none; z-index: 1;
     }
 
-    /* ===== ВЕРХНИЕ ВКЛАДКИ ===== */
     .tabs {
-      position: fixed;
-      top: 0; left: 0; right: 0;
+      position: fixed; top: 0; left: 0; right: 0;
       display: flex;
       background: var(--panel-bg);
       border-bottom: 1px solid var(--panel-border);
@@ -59,36 +51,27 @@
     }
 
     .tab {
-      flex: 1;
-      padding: 14px 6px;
-      background: none;
-      border: none;
+      flex: 1; padding: 14px 4px;
+      background: none; border: none;
       color: var(--tg-theme-hint-color, #999999);
-      font-size: 13px;
-      font-weight: 600;
-      font-family: inherit;
-      cursor: pointer;
+      font-size: 12px; font-weight: 600;
+      font-family: inherit; cursor: pointer;
       position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
-      white-space: nowrap;
+      display: flex; align-items: center; justify-content: center;
+      gap: 3px; white-space: nowrap;
       transition: color 0.2s ease;
     }
 
     .tab.active { color: var(--tg-theme-text-color, #000000); }
 
     .tab.active::after {
-      content: '';
-      position: absolute;
+      content: ''; position: absolute;
       bottom: 0; left: 20%; right: 20%;
       height: 3px;
       background: var(--btn-gradient);
       border-radius: 3px 3px 0 0;
     }
 
-    /* ===== ЭКРАНЫ ===== */
     .screen {
       display: none;
       position: absolute;
@@ -99,25 +82,18 @@
 
     .screen.active { display: block; }
 
-    /* ===== КЛИКЕР ===== */
     #screen-clicker .container {
       display: grid;
       grid-template-rows: 1fr auto 1fr;
-      align-items: center;
-      justify-items: center;
-      height: 100%;
-      width: 100%;
-      padding: 20px;
+      align-items: center; justify-items: center;
+      height: 100%; width: 100%; padding: 20px;
       box-sizing: border-box;
       position: relative;
     }
 
     .counter {
-      grid-row: 1;
-      align-self: end;
-      font-size: 72px;
-      font-weight: 700;
-      line-height: 1;
+      grid-row: 1; align-self: end;
+      font-size: 72px; font-weight: 700; line-height: 1;
       color: var(--tg-theme-text-color, #000000);
       transition: transform 0.15s ease;
       margin-bottom: 40px;
@@ -127,25 +103,30 @@
 
     .btn {
       grid-row: 2;
-      width: 200px;
-      height: 200px;
-      border-radius: 50%;
-      border: none;
+      width: 200px; height: 200px;
+      border-radius: 50%; border: none;
       background: var(--btn-gradient);
       color: var(--btn-text-color);
-      font-size: 22px;
-      font-weight: 600;
+      font-size: 22px; font-weight: 600;
       cursor: pointer;
       box-shadow: 0 10px 40px var(--btn-shadow);
       transition: transform 0.1s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
       font-family: inherit;
       position: relative;
     }
 
     .btn:active { transform: scale(0.94); }
+
+    .btn .btn-skin-emoji {
+      position: absolute;
+      font-size: 90px;
+      line-height: 1;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .btn.has-skin .btn-label { display: none; }
 
     .multiplier-badge {
       position: absolute;
@@ -155,8 +136,7 @@
       background: var(--btn-gradient);
       color: var(--btn-text-color);
       border-radius: 20px;
-      font-size: 14px;
-      font-weight: 700;
+      font-size: 14px; font-weight: 700;
       box-shadow: 0 4px 15px var(--accent-color-soft);
       animation: pulseBadge 1.5s ease-in-out infinite;
       z-index: 100;
@@ -167,26 +147,17 @@
       50%      { transform: translateX(-50%) scale(1.05); }
     }
 
-    /* ===== ЛИДЕРБОРД ===== */
     #screen-leaderboard { padding: 16px; }
 
     .leaderboard-title {
-      text-align: center;
-      font-size: 20px;
-      font-weight: 700;
-      margin-bottom: 16px;
-      color: var(--accent-color);
+      text-align: center; font-size: 20px; font-weight: 700;
+      margin-bottom: 16px; color: var(--accent-color);
     }
 
-    .leaderboard-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
+    .leaderboard-list { display: flex; flex-direction: column; gap: 8px; }
 
     .leaderboard-item {
-      display: flex;
-      align-items: center;
+      display: flex; align-items: center;
       padding: 14px 16px;
       background: var(--tg-theme-secondary-bg-color, #f0f0f0);
       border: 1px solid var(--accent-color-border);
@@ -199,11 +170,8 @@
     }
 
     .rank {
-      font-size: 20px;
-      font-weight: 700;
-      width: 40px;
-      text-align: center;
-      flex-shrink: 0;
+      font-size: 20px; font-weight: 700;
+      width: 40px; text-align: center; flex-shrink: 0;
       color: var(--tg-theme-text-color, #000000);
     }
 
@@ -212,54 +180,41 @@
     .rank.bronze { color: #cd7f32; }
 
     .player-name {
-      flex: 1;
-      margin-left: 12px;
-      font-size: 15px;
-      font-weight: 600;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      flex: 1; margin-left: 12px;
+      font-size: 15px; font-weight: 600;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
       color: var(--tg-theme-text-color, #000000);
     }
 
     .player-score {
-      font-size: 16px;
-      font-weight: 700;
+      font-size: 16px; font-weight: 700;
       color: var(--accent-color);
       flex-shrink: 0;
     }
 
     .loading, .empty {
-      text-align: center;
-      padding: 40px 20px;
+      text-align: center; padding: 40px 20px;
       color: var(--tg-theme-hint-color, #999999);
       font-size: 15px;
     }
 
-    /* ===== МАГАЗИН ===== */
     #screen-shop { padding: 16px; }
 
     .shop-subtabs {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 16px;
+      display: flex; gap: 6px; margin-bottom: 16px;
       background: var(--tg-theme-secondary-bg-color, #f0f0f0);
-      border-radius: 14px;
-      padding: 4px;
+      border-radius: 14px; padding: 4px;
     }
 
     .shop-subtab {
-      flex: 1;
-      padding: 10px 12px;
-      background: none;
-      border: none;
+      flex: 1; padding: 10px 6px;
+      background: none; border: none;
       color: var(--tg-theme-hint-color, #999999);
-      font-size: 13px;
-      font-weight: 600;
-      font-family: inherit;
-      cursor: pointer;
+      font-size: 12px; font-weight: 600;
+      font-family: inherit; cursor: pointer;
       border-radius: 10px;
       transition: color 0.2s ease, background 0.2s ease;
+      white-space: nowrap;
     }
 
     .shop-subtab.active {
@@ -267,31 +222,34 @@
       background: var(--btn-gradient);
     }
 
+    .shop-section-title {
+      font-size: 16px; font-weight: 700;
+      margin: 16px 0 10px;
+      color: var(--tg-theme-text-color, #000000);
+    }
+
+    .shop-section-title:first-child { margin-top: 0; }
+
     .shop-list {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
     }
 
     .shop-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: space-between;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: space-between;
       padding: 12px 8px;
       background: var(--tg-theme-secondary-bg-color, #f0f0f0);
       border: 1px solid var(--accent-color-border);
       border-radius: 18px;
       aspect-ratio: 1 / 1;
       box-sizing: border-box;
-      position: relative;
-      overflow: hidden;
+      position: relative; overflow: hidden;
       text-align: center;
       transition: transform 0.15s ease;
       gap: 6px;
       min-width: 0;
     }
-    
+
     .shop-item:active { transform: scale(0.97); }
 
     .shop-item-active {
@@ -308,53 +266,37 @@
       color: #ffffff;
       width: 22px; height: 22px;
       border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 13px;
-      font-weight: 700;
-      line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; line-height: 1;
     }
 
     .shop-item-icon {
-      font-size: 40px;
-      line-height: 1;
-      margin-bottom: 4px;
+      font-size: 40px; line-height: 1; margin-bottom: 4px;
       flex-shrink: 0;
     }
 
     .shop-item-info {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      flex: 1;
-      justify-content: center;
-      width: 100%;
-      min-width: 0;
+      display: flex; flex-direction: column; gap: 2px;
+      flex: 1; justify-content: center;
+      width: 100%; min-width: 0;
     }
 
     .shop-item-name {
-      font-size: 13px;
-      font-weight: 700;
+      font-size: 13px; font-weight: 700;
       color: var(--tg-theme-text-color, #000000);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
       width: 100%;
     }
 
     .shop-item-desc {
       font-size: 10px;
       color: var(--tg-theme-hint-color, #999999);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
       width: 100%;
     }
 
     .shop-item-price {
-      font-size: 12px;
-      font-weight: 700;
+      font-size: 12px; font-weight: 700;
       color: var(--accent-color);
       margin: 4px 0 2px;
     }
@@ -362,15 +304,11 @@
     .shop-buy-btn {
       background: var(--btn-gradient);
       color: var(--btn-text-color);
-      border: none;
-      border-radius: 10px;
+      border: none; border-radius: 10px;
       padding: 8px 10px;
-      font-size: 12px;
-      font-weight: 600;
-      font-family: inherit;
-      cursor: pointer;
-      width: 100%;
-      box-sizing: border-box;
+      font-size: 12px; font-weight: 600;
+      font-family: inherit; cursor: pointer;
+      width: 100%; box-sizing: border-box;
       transition: transform 0.1s ease, opacity 0.2s ease;
       margin-top: auto;
     }
@@ -379,8 +317,7 @@
     .shop-buy-btn:disabled {
       background: rgba(128, 128, 128, 0.3);
       color: rgba(255, 255, 255, 0.6);
-      cursor: default;
-      opacity: 0.7;
+      cursor: default; opacity: 0.7;
     }
 
     .shop-list > .shop-item:last-child:nth-child(odd) {
@@ -389,42 +326,34 @@
       min-height: 160px;
     }
 
-    /* ===== ПРОМОКОД ===== */
     .promo-block {
       background: var(--tg-theme-secondary-bg-color, #f0f0f0);
       border: 1px solid var(--accent-color-border);
       border-radius: 16px;
-      padding: 14px;
-      margin-bottom: 16px;
-      box-sizing: border-box;
-      overflow: hidden;
+      padding: 14px; margin-bottom: 16px;
+      box-sizing: border-box; overflow: hidden;
     }
 
     .promo-title {
-      font-size: 14px;
-      font-weight: 700;
+      font-size: 14px; font-weight: 700;
       color: var(--accent-color);
       margin-bottom: 10px;
     }
 
     .promo-row {
-      display: flex;
-      gap: 8px;
+      display: flex; gap: 8px;
       align-items: stretch;
-      width: 100%;
-      box-sizing: border-box;
+      width: 100%; box-sizing: border-box;
     }
 
     .promo-input {
-      flex: 1;
-      min-width: 0;
+      flex: 1; min-width: 0;
       padding: 10px 12px;
       background: var(--tg-theme-bg-color, #ffffff);
       color: var(--tg-theme-text-color, #000000);
       border: 1px solid var(--accent-color-border);
       border-radius: 10px;
-      font-size: 13px;
-      font-family: inherit;
+      font-size: 13px; font-family: inherit;
       outline: none;
       text-transform: uppercase;
       letter-spacing: 1px;
@@ -434,9 +363,7 @@
 
     .promo-input::placeholder {
       color: var(--tg-theme-hint-color, #999999);
-      text-transform: none;
-      letter-spacing: normal;
-      font-weight: 400;
+      text-transform: none; letter-spacing: normal; font-weight: 400;
     }
 
     .promo-input:focus { border-color: var(--accent-color-glow); }
@@ -445,27 +372,19 @@
       padding: 10px 14px;
       background: var(--btn-gradient);
       color: var(--btn-text-color);
-      border: none;
-      border-radius: 10px;
-      font-size: 12px;
-      font-weight: 700;
-      font-family: inherit;
-      cursor: pointer;
+      border: none; border-radius: 10px;
+      font-size: 12px; font-weight: 700;
+      font-family: inherit; cursor: pointer;
       white-space: nowrap;
-      flex-shrink: 0;
-      box-sizing: border-box;
+      flex-shrink: 0; box-sizing: border-box;
     }
 
     .promo-btn:active { transform: scale(0.96); }
     .promo-btn:disabled { opacity: 0.5; }
 
-    /* ===== НИЖНЯЯ ПАНЕЛЬ ===== */
     .bottom-nav {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
+      position: fixed; bottom: 0; left: 0; right: 0;
+      display: flex; justify-content: space-around; align-items: center;
       background: var(--panel-bg);
       border-top: 1px solid var(--panel-border);
       padding: 10px 0;
@@ -475,16 +394,12 @@
     }
 
     .nav-btn {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      background: none;
-      border: none;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 4px;
+      background: none; border: none;
       color: var(--tg-theme-hint-color, #999999);
       font-family: inherit;
-      font-size: 11px;
-      font-weight: 500;
+      font-size: 11px; font-weight: 500;
       cursor: pointer;
       padding: 8px 12px;
       border-radius: 12px;
@@ -494,11 +409,33 @@
     .nav-btn:active { color: var(--accent-color); }
     .nav-btn .icon { font-size: 22px; line-height: 1; }
 
-    @keyframes gradientShift {
-      0%   { background-position: 0% 50%; }
-      50%  { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
+    .toast {
+      position: fixed;
+      bottom: 90px; left: 50%;
+      transform: translateX(-50%) translateY(120%);
+      background: var(--btn-gradient);
+      color: var(--btn-text-color);
+      padding: 12px 20px;
+      border-radius: 14px;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 8px 30px var(--accent-color-soft);
+      z-index: 9999;
+      display: flex; align-items: center; gap: 8px;
+      max-width: 90vw;
+      box-sizing: border-box;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+      opacity: 0;
+      pointer-events: none;
     }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    .toast .toast-icon { font-size: 20px; }
+    .toast .toast-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   </style>
 </head>
 <body>
@@ -514,20 +451,24 @@
   <div class="screen active" id="screen-clicker">
     <div class="container">
       <div class="counter" id="counter">0</div>
-      <button class="btn" id="tapBtn">Нажми</button>
+      <button class="btn" id="tapBtn">
+        <span class="btn-label">Нажми</span>
+      </button>
     </div>
   </div>
 
   <div class="screen" id="screen-shop">
     <div class="shop-subtabs">
-      <button class="shop-subtab active" data-subtab="themes">🎨 Темы</button>
+      <button class="shop-subtab active" data-subtab="custom">🎨 Кастомизация</button>
       <button class="shop-subtab" data-subtab="bonuses">🎁 Бонусы</button>
+      <button class="shop-subtab" data-subtab="inventory">🎒 Инвентарь</button>
     </div>
 
-    <div class="shop-content" id="shopThemes">
-      <div class="shop-list" id="shopList">
-        <div class="loading">Загрузка...</div>
-      </div>
+    <div class="shop-content" id="shopCustom">
+      <div class="shop-section-title">🎯 Скины кнопки</div>
+      <div class="shop-list" id="skinsList"><div class="loading">Загрузка...</div></div>
+      <div class="shop-section-title">🎨 Цвета</div>
+      <div class="shop-list" id="colorsList"><div class="loading">Загрузка...</div></div>
     </div>
 
     <div class="shop-content" id="shopBonuses" style="display: none;">
@@ -538,120 +479,102 @@
           <button class="promo-btn" id="promoBtn">Активировать</button>
         </div>
       </div>
+      <div class="shop-list" id="bonusesList"><div class="loading">Загрузка...</div></div>
+    </div>
 
-      <div class="shop-list" id="bonusesList">
-        <div class="loading">Загрузка...</div>
-      </div>
+    <div class="shop-content" id="shopInventory" style="display: none;">
+      <div class="shop-list" id="inventoryList"><div class="loading">Загрузка...</div></div>
     </div>
   </div>
 
   <div class="screen" id="screen-leaderboard">
     <div class="leaderboard-title">🏆 Топ-10 игроков</div>
-    <div class="leaderboard-list" id="leaderboardList">
-      <div class="loading">Загрузка...</div>
-    </div>
+    <div class="leaderboard-list" id="leaderboardList"><div class="loading">Загрузка...</div></div>
   </div>
 
   <div class="bottom-nav">
-    <button class="nav-btn" id="donateBtn">
-      <span class="icon">💝</span>
-      <span>Поддержать</span>
-    </button>
-    <button class="nav-btn" id="channelBtn">
-      <span class="icon">📢</span>
-      <span>Канал</span>
-    </button>
-    <button class="nav-btn" id="infoBtn">
-      <span class="icon">ℹ️</span>
-      <span>О боте</span>
-    </button>
+    <button class="nav-btn" id="donateBtn"><span class="icon">💝</span><span>Поддержать</span></button>
+    <button class="nav-btn" id="channelBtn"><span class="icon">📢</span><span>Канал</span></button>
+    <button class="nav-btn" id="infoBtn"><span class="icon">ℹ️</span><span>О боте</span></button>
   </div>
 
-  <script>
+  <div class="toast" id="toast">
+    <span class="toast-icon" id="toastIcon">🎉</span>
+    <span class="toast-text" id="toastText"></span>
+  </div>
+    <script>
     // ============================================================
-    // 1. ИНИЦИАЛИЗАЦИЯ
+    // ⚙️ ЧАСТЬ 1: ЧТО МЕНЯЕШЬ ЧАСТО
     // ============================================================
 
-    const tg = window.Telegram && window.Telegram.WebApp
-      ? window.Telegram.WebApp
-      : null;
-
-    if (tg) {
-      tg.ready();
-      tg.expand();
-    }
-
-    // ⚠️ ЗАМЕНИ на URL воркера (БЕЗ слэша в конце!)
-    const API_URL = 'https://broad-boat-0443.g3316464.workers.dev';
-
-    // ⚠️ ЗАМЕНИ на свои ссылки
+    const API_URL = 'https://basicclickbot.g3316464.workers.dev';
     const DONATE_URL = 'https://t.me/Kwbejdif';
     const CHANNEL_URL = 'https://t.me/твой_канал';
+    const COIN = '🪙';
+    const TOAST_DURATION = 2500;
 
-    const COIN = '💰';
+    // ============================================================
+    // ⚙️ ЧАСТЬ 2: ЛОГИКА
+    // ============================================================
+
+    const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+    if (tg) { tg.ready(); tg.expand(); }
 
     const counterEl = document.getElementById('counter');
     const btn = document.getElementById('tapBtn');
     const canvas = document.getElementById('particles');
     const ctx = canvas.getContext('2d');
     const leaderboardList = document.getElementById('leaderboardList');
-    const shopList = document.getElementById('shopList');
+    const skinsList = document.getElementById('skinsList');
+    const colorsList = document.getElementById('colorsList');
+    const bonusesList = document.getElementById('bonusesList');
+    const inventoryList = document.getElementById('inventoryList');
 
     let count = 0;
     let particles = [];
     let saveTimer = null;
     let currentMultiplier = 1;
     let multiplierTimer = null;
+    let activeColor = 'default';
+    let activeSkin = 'default';
+    let toastTimer = null;
 
-    // ============================================================
-    // 2. CANVAS
-    // ============================================================
-
-    function resizeCanvas() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+    function showToast(icon, text) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastIcon').textContent = icon;
+      document.getElementById('toastText').textContent = text;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), TOAST_DURATION);
     }
+
+    function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
-    function formatNumber(n) {
-      return Number(n).toLocaleString('ru-RU');
-    }
+    function formatNumber(n) { return Number(n).toLocaleString('ru-RU'); }
+    function escapeHtml(text) { const d = document.createElement('div'); d.textContent = text; return d.innerHTML; }
 
-    function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
+    function formatTime(ms) {
+      const sec = Math.ceil(ms / 1000);
+      const min = Math.floor(sec / 60);
+      const s = sec % 60;
+      if (min > 0) return min + ':' + String(s).padStart(2, '0');
+      return sec + 'с';
     }
 
     function hexToRgb(hex) {
       if (!hex || hex.charAt(0) !== '#') return null;
       const h = hex.slice(1);
       if (h.length !== 6) return null;
-      return {
-        r: parseInt(h.slice(0, 2), 16),
-        g: parseInt(h.slice(2, 4), 16),
-        b: parseInt(h.slice(4, 6), 16),
-      };
+      return { r: parseInt(h.slice(0, 2), 16), g: parseInt(h.slice(2, 4), 16), b: parseInt(h.slice(4, 6), 16) };
     }
 
-    // ============================================================
-    // 3. ТЕМЫ
-    // ============================================================
-
-    function applyTheme(theme) {
-      if (!theme) return;
-
+    function applyColor(colorId) {
+      activeColor = colorId || 'default';
       const root = document.documentElement;
-      const body = document.body;
 
-      // ===== СИСТЕМНАЯ ТЕМА (Классика) =====
-      if (theme.isSystem) {
-        body.style.background = 'var(--tg-theme-bg-color, #ffffff)';
-        body.style.backgroundAttachment = '';
-        body.style.backgroundSize = '';
-        body.style.animation = '';
-
+      if (!colorId || colorId === 'default') {
         root.style.setProperty('--accent-color', 'var(--tg-theme-button-color, #2ea6ff)');
         root.style.setProperty('--accent-color-soft', 'rgba(46, 166, 255, 0.3)');
         root.style.setProperty('--accent-color-border', 'rgba(46, 166, 255, 0.3)');
@@ -662,88 +585,91 @@
         root.style.setProperty('--btn-text-color', 'var(--tg-theme-button-text-color, #ffffff)');
         root.style.setProperty('--panel-bg', 'var(--tg-theme-bg-color, #ffffff)');
         root.style.setProperty('--panel-border', 'var(--tg-theme-secondary-bg-color, #f0f0f0)');
-
-        const tapBtnEl = document.getElementById('tapBtn');
-        if (tapBtnEl) {
-          tapBtnEl.style.background = '';
-          tapBtnEl.style.boxShadow = '';
-        }
+        document.body.style.background = 'var(--tg-theme-bg-color, #ffffff)';
+        btn.style.background = '';
+        btn.style.boxShadow = '';
         return;
       }
 
-      // ===== КАСТОМНАЯ ТЕМА =====
-      const rgb = hexToRgb(theme.accent);
-      if (rgb) {
-        root.style.setProperty('--accent-color', theme.accent);
-        root.style.setProperty('--accent-color-soft', 'rgba(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ', 0.3)');
-        root.style.setProperty('--accent-color-border', 'rgba(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ', 0.3)');
-        root.style.setProperty('--accent-color-glow', 'rgba(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ', 0.6)');
-        root.style.setProperty('--accent-color-bg', 'rgba(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ', 0.15)');
-        root.style.setProperty('--panel-bg', 'rgba(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ', 0.35)');
-        root.style.setProperty('--panel-border', 'rgba(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ', 0.3)');
-      }
+      const colorData = window._colorsCache && window._colorsCache[colorId];
+      if (!colorData) return;
+      const hex = colorData.hex;
+      const rgb = hexToRgb(hex);
+      if (!rgb) return;
 
-      body.style.background = theme.bg;
-      body.style.backgroundAttachment = 'fixed';
-
-      if (theme.animated) {
-        body.style.backgroundSize = '400% 400%';
-        body.style.animation = 'gradientShift 15s ease infinite';
-      } else {
-        body.style.backgroundSize = '';
-        body.style.animation = '';
-      }
-
-      root.style.setProperty('--btn-gradient', theme.btn);
-      if (theme.shadow) root.style.setProperty('--btn-shadow', theme.shadow);
-      root.style.setProperty('--btn-text-color', '#ffffff');
-
-      const tapBtnEl = document.getElementById('tapBtn');
-      if (tapBtnEl) {
-        tapBtnEl.style.background = theme.btn;
-        tapBtnEl.style.boxShadow = '0 10px 40px ' + theme.shadow;
-      }
+      root.style.setProperty('--accent-color', hex);
+      root.style.setProperty('--accent-color-soft', 'rgba(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ', 0.3)');
+      root.style.setProperty('--accent-color-border', 'rgba(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ', 0.3)');
+      root.style.setProperty('--accent-color-glow', 'rgba(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ', 0.6)');
+      root.style.setProperty('--accent-color-bg', 'rgba(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ', 0.15)');
+      root.style.setProperty('--btn-gradient', hex);
+      root.style.setProperty('--btn-shadow', 'rgba(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ', 0.5)');
+      const isLight = (rgb.r * 0.299 + rgb.g * 0.587 + rgb.b * 0.114) > 180;
+      root.style.setProperty('--btn-text-color', isLight ? '#000000' : '#ffffff');
+      root.style.setProperty('--panel-bg', 'rgba(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ', 0.25)');
+      root.style.setProperty('--panel-border', 'rgba(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ', 0.3)');
+      document.body.style.background = 'linear-gradient(135deg, ' + hex + '33 0%, ' + hex + '11 100%)';
+      btn.style.background = hex;
+      btn.style.boxShadow = '0 10px 40px rgba(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ', 0.5)';
     }
 
-    // ============================================================
-    // 4. ЗАГРУЗКА
-    // ============================================================
+    function applySkin(skinId, skinIcon) {
+      activeSkin = skinId || 'default';
+      const oldSkin = btn.querySelector('.btn-skin-emoji');
+      if (oldSkin) oldSkin.remove();
+      const label = btn.querySelector('.btn-label');
+      if (!skinId || skinId === 'default') {
+        btn.classList.remove('has-skin');
+        if (label) label.style.display = '';
+        return;
+      }
+      btn.classList.add('has-skin');
+      if (label) label.style.display = 'none';
+      const emoji = document.createElement('span');
+      emoji.className = 'btn-skin-emoji';
+      emoji.textContent = skinIcon || '⭕';
+      btn.appendChild(emoji);
+    }
 
     async function loadCount() {
       try {
-        const res = await fetch(API_URL + '/api/me', {
-          headers: { 'X-Init-Data': tg ? tg.initData : '' }
-        });
+        const res = await fetch(API_URL + '/api/me', { headers: { 'X-Init-Data': tg ? tg.initData : '' } });
         const data = await res.json();
         count = data.count || 0;
         counterEl.textContent = formatNumber(count);
-
-        if (data.theme) {
-          const themeRes = await fetch(API_URL + '/api/themes', {
-            headers: { 'X-Init-Data': tg ? tg.initData : '' }
-          });
-          const themeData = await themeRes.json();
-          const activeTheme = themeData.themes.find(t => t.id === data.theme);
-          if (activeTheme) applyTheme(activeTheme);
+        await loadColorsSilent();
+        await loadSkinsSilent();
+        if (data.color) applyColor(data.color);
+        if (data.skin) {
+          const skins = window._skinsCache || {};
+          const skinData = skins[data.skin];
+          applySkin(data.skin, skinData ? skinData.icon : null);
         }
-
-        const bonusRes = await fetch(API_URL + '/api/bonuses', {
-          headers: { 'X-Init-Data': tg ? tg.initData : '' }
-        });
+        const bonusRes = await fetch(API_URL + '/api/bonuses', { headers: { 'X-Init-Data': tg ? tg.initData : '' } });
         const bonusData = await bonusRes.json();
         currentMultiplier = bonusData.multiplier || 1;
-        if (bonusData.activeUntil && bonusData.activeUntil > Date.now()) {
-          startMultiplierTimer(bonusData.activeUntil);
-        }
+        if (bonusData.activeUntil && bonusData.activeUntil > Date.now()) startMultiplierTimer(bonusData.activeUntil);
         updateMultiplierBadge();
-      } catch (e) {
-        console.error('Load error:', e);
-      }
+      } catch (e) { console.error('Load error:', e); }
     }
 
-    // ============================================================
-    // 5. СОХРАНЕНИЕ
-    // ============================================================
+    async function loadColorsSilent() {
+      try {
+        const res = await fetch(API_URL + '/api/colors', { headers: { 'X-Init-Data': tg ? tg.initData : '' } });
+        const data = await res.json();
+        window._colorsCache = {};
+        (data.colors || []).forEach(c => { window._colorsCache[c.id] = c; });
+      } catch (e) { console.error(e); }
+    }
+
+    async function loadSkinsSilent() {
+      try {
+        const res = await fetch(API_URL + '/api/skins', { headers: { 'X-Init-Data': tg ? tg.initData : '' } });
+        const data = await res.json();
+        window._skinsCache = {};
+        (data.skins || []).forEach(s => { window._skinsCache[s.id] = s; });
+      } catch (e) { console.error(e); }
+    }
 
     function saveCount() {
       clearTimeout(saveTimer);
@@ -751,36 +677,19 @@
         try {
           await fetch(API_URL + '/api/count', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Init-Data': tg ? tg.initData : ''
-            },
+            headers: { 'Content-Type': 'application/json', 'X-Init-Data': tg ? tg.initData : '' },
             body: JSON.stringify({ count: count })
           });
-        } catch (e) {
-          console.error('Save failed:', e);
-        }
+        } catch (e) { console.error('Save failed:', e); }
       }, 300);
     }
-
-    // ============================================================
-    // 6. ЧАСТИЦЫ
-    // ============================================================
 
     function spawnParticles(x, y) {
       const colors = ['#2ea6ff', '#4db8ff', '#6ab2f2', '#9ed4ff', '#c2e5ff'];
       for (let i = 0; i < 8; i++) {
         const angle = (Math.PI * 2 * i) / 8 + Math.random() * 0.5;
         const speed = 3 + Math.random() * 4;
-        particles.push({
-          x, y,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed,
-          size: 3 + Math.random() * 4,
-          color: colors[Math.floor(Math.random() * colors.length)],
-          life: 1,
-          decay: 0.02 + Math.random() * 0.02
-        });
+        particles.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, size: 3 + Math.random() * 4, color: colors[Math.floor(Math.random() * colors.length)], life: 1, decay: 0.02 + Math.random() * 0.02 });
       }
     }
 
@@ -788,488 +697,462 @@
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vy += 0.15;
-        p.vx *= 0.98;
-        p.life -= p.decay;
+        p.x += p.vx; p.y += p.vy; p.vy += 0.15; p.vx *= 0.98; p.life -= p.decay;
         if (p.life <= 0) { particles.splice(i, 1); continue; }
-        ctx.globalAlpha = p.life;
-        ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.globalAlpha = p.life; ctx.fillStyle = p.color;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
       }
       ctx.globalAlpha = 1;
       requestAnimationFrame(animate);
     }
     animate();
 
-    // ============================================================
-    // 7. КЛИК
-    // ============================================================
-
     btn.addEventListener('click', () => {
       count += currentMultiplier;
       counterEl.textContent = formatNumber(count);
-
       counterEl.classList.add('bump');
       setTimeout(() => counterEl.classList.remove('bump'), 150);
-
       const rect = btn.getBoundingClientRect();
       spawnParticles(rect.left + rect.width / 2, rect.top + rect.height / 2);
-
-      if (tg && tg.HapticFeedback) {
-        tg.HapticFeedback.impactOccurred('medium');
-      }
-
+      if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
       saveCount();
     });
-
-    // ============================================================
-    // 8. ВЕРХНИЕ ВКЛАДКИ
-    // ============================================================
 
     document.querySelectorAll('.tab').forEach(tab => {
       tab.addEventListener('click', () => {
         const screenName = tab.dataset.screen;
-
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
-
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById('screen-' + screenName).classList.add('active');
-
         if (screenName === 'leaderboard') loadLeaderboard();
-        if (screenName === 'shop') loadThemes();
-
+        if (screenName === 'shop') loadCustomization();
         if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
       });
     });
-
-    // ============================================================
-    // 9. ПОД-ВКЛАДКИ МАГАЗИНА
-    // ============================================================
 
     document.querySelectorAll('.shop-subtab').forEach(tab => {
       tab.addEventListener('click', () => {
         const subtab = tab.dataset.subtab;
-
         document.querySelectorAll('.shop-subtab').forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
-
-        document.getElementById('shopThemes').style.display = 'none';
+        document.getElementById('shopCustom').style.display = 'none';
         document.getElementById('shopBonuses').style.display = 'none';
-
-        if (subtab === 'themes') {
-          document.getElementById('shopThemes').style.display = 'block';
-        } else if (subtab === 'bonuses') {
-          document.getElementById('shopBonuses').style.display = 'block';
-          loadBonuses();
-        }
-
+        document.getElementById('shopInventory').style.display = 'none';
+        if (subtab === 'custom') { document.getElementById('shopCustom').style.display = 'block'; loadCustomization(); }
+        else if (subtab === 'bonuses') { document.getElementById('shopBonuses').style.display = 'block'; loadBonuses(); }
+        else if (subtab === 'inventory') { document.getElementById('shopInventory').style.display = 'block'; loadInventory(); }
         if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
       });
     });
 
-    // ============================================================
-    // 10. ЛИДЕРБОРД
-    // ============================================================
-
     async function loadLeaderboard() {
       leaderboardList.innerHTML = '<div class="loading">Загрузка...</div>';
-
       try {
-        const res = await fetch(API_URL + '/api/top', {
-          headers: { 'X-Init-Data': tg ? tg.initData : '' }
-        });
+        const res = await fetch(API_URL + '/api/top', { headers: { 'X-Init-Data': tg ? tg.initData : '' } });
         const data = await res.json();
-
-        if (!data.players || data.players.length === 0) {
-          leaderboardList.innerHTML = '<div class="empty">Пока никого нет 😢</div>';
-          return;
-        }
-
-        const myId = tg && tg.initDataUnsafe && tg.initDataUnsafe.user
-          ? tg.initDataUnsafe.user.id
-          : null;
+        if (!data.players || data.players.length === 0) { leaderboardList.innerHTML = '<div class="empty">Пока никого нет 😢</div>'; return; }
+        const myId = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : null;
         const medals = ['🥇', '🥈', '🥉'];
-
         let html = '';
         data.players.forEach((p, i) => {
-          let rankClass = '';
-          if (i === 0) rankClass = 'gold';
-          else if (i === 1) rankClass = 'silver';
-          else if (i === 2) rankClass = 'bronze';
-
+          let rankClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
           const isMe = p.user_id === myId ? 'me' : '';
           const rankDisplay = i < 3 ? medals[i] : String(i + 1);
-
           const rawName = p.display_name || 'Игрок';
           let name = escapeHtml(rawName.charAt(0) === '@' ? rawName : '@' + rawName);
           if (p.is_premium) name += ' 💎';
-
           html += '<div class="leaderboard-item ' + isMe + '">';
           html += '<div class="rank ' + rankClass + '">' + rankDisplay + '</div>';
           html += '<div class="player-name">' + name + '</div>';
           html += '<div class="player-score">' + formatNumber(p.count) + ' ' + COIN + '</div>';
           html += '</div>';
         });
-
         leaderboardList.innerHTML = html;
-      } catch (e) {
-        leaderboardList.innerHTML = '<div class="empty">Ошибка загрузки 😢</div>';
-        console.error(e);
-      }
+      } catch (e) { leaderboardList.innerHTML = '<div class="empty">Ошибка загрузки 😢</div>'; }
     }
 
-    // ============================================================
-    // 11. МАГАЗИН — ТЕМЫ
-    // ============================================================
+    async function loadCustomization() { await loadSkins(); await loadColors(); }
 
-    async function loadThemes() {
-      shopList.innerHTML = '<div class="loading">Загрузка...</div>';
-
+    async function loadSkins() {
+      skinsList.innerHTML = '<div class="loading">Загрузка...</div>';
       try {
-        const res = await fetch(API_URL + '/api/themes', {
-          headers: { 'X-Init-Data': tg ? tg.initData : '' }
-        });
+        const res = await fetch(API_URL + '/api/skins', { headers: { 'X-Init-Data': tg ? tg.initData : '' } });
         const data = await res.json();
-
-        if (!data.themes || data.themes.length === 0) {
-          shopList.innerHTML = '<div class="empty">Магазин пуст 😢</div>';
-          return;
-        }
-
+        window._skinsCache = {};
+        (data.skins || []).forEach(s => { window._skinsCache[s.id] = s; });
+        if (!data.skins || data.skins.length === 0) { skinsList.innerHTML = '<div class="empty">Скинов нет 😢</div>'; return; }
         let html = '';
-        data.themes.forEach(t => {
-          const isActive = t.active ? 'shop-item-active' : '';
-          let btnText, btnDisabled;
-
-          if (t.active) { btnText = '✅ Активна'; btnDisabled = true; }
-          else if (t.owned) { btnText = 'Применить'; btnDisabled = false; }
+        data.skins.forEach(s => {
+          const isActive = s.active ? 'shop-item-active' : '';
+          let btnText, btnDisabled, priceHtml;
+          if (s.owned) { btnText = '✅ Куплено'; btnDisabled = true; }
+          else if (s.premiumOnly) { btnText = '💎 Premium'; btnDisabled = true; }
           else { btnText = 'Купить'; btnDisabled = false; }
-
+          if (s.premiumOnly) priceHtml = '<div class="shop-item-price">Только с 💎</div>';
+          else if (!s.owned) priceHtml = '<div class="shop-item-price">' + formatNumber(s.price) + ' ' + COIN + '</div>';
+          else priceHtml = '';
           html += '<div class="shop-item ' + isActive + '">';
-          html += '<div class="shop-item-icon">' + t.icon + '</div>';
-          html += '<div class="shop-item-info">';
-          html += '<div class="shop-item-name">' + escapeHtml(t.name) + '</div>';
-          html += '<div class="shop-item-desc">' + escapeHtml(t.desc) + '</div>';
-          html += '</div>';
-          if (!t.owned) {
-            html += '<div class="shop-item-price">' + formatNumber(t.price) + ' ' + COIN + '</div>';
-          }
-          html += '<button class="shop-buy-btn" data-theme="' + t.id + '" data-owned="' + t.owned + '"' + (btnDisabled ? ' disabled' : '') + '>' + btnText + '</button>';
+          html += '<div class="shop-item-icon">' + s.icon + '</div>';
+          html += '<div class="shop-item-info"><div class="shop-item-name">' + escapeHtml(s.name) + '</div>';
+          html += '<div class="shop-item-desc">' + (s.premiumOnly ? 'С Премиумом' : 'Скин кнопки') + '</div></div>';
+          html += priceHtml;
+          html += '<button class="shop-buy-btn" data-skin="' + s.id + '"' + (btnDisabled ? ' disabled' : '') + '>' + btnText + '</button>';
           html += '</div>';
         });
-
-        shopList.innerHTML = html;
-
-        document.querySelectorAll('.shop-buy-btn[data-theme]').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const themeId = btn.dataset.theme;
-            const owned = btn.dataset.owned === 'true';
-            if (owned) activateTheme(themeId);
-            else buyTheme(themeId);
-          });
+        skinsList.innerHTML = html;
+        document.querySelectorAll('.shop-buy-btn[data-skin]').forEach(b => {
+          b.addEventListener('click', () => buySkin(b.dataset.skin));
         });
-      } catch (e) {
-        shopList.innerHTML = '<div class="empty">Ошибка загрузки 😢</div>';
-        console.error(e);
-      }
+      } catch (e) { skinsList.innerHTML = '<div class="empty">Ошибка загрузки 😢</div>'; }
     }
 
-    async function buyTheme(themeId) {
+    async function buySkin(skinId) {
       try {
-        const res = await fetch(API_URL + '/api/themes/buy', {
+        const res = await fetch(API_URL + '/api/skins/buy', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Init-Data': tg ? tg.initData : ''
-          },
-          body: JSON.stringify({ themeId })
+          headers: { 'Content-Type': 'application/json', 'X-Init-Data': tg ? tg.initData : '' },
+          body: JSON.stringify({ skinId })
         });
         const data = await res.json();
-
-        if (data.error === 'not_enough') {
-          if (tg && tg.showPopup) {
-            tg.showPopup({
-              title: 'Недостаточно средств',
-              message: 'Нужно: ' + formatNumber(data.need) + ' ' + COIN + '\nУ тебя: ' + formatNumber(data.have) + ' ' + COIN,
-              buttons: [{ type: 'close' }]
-            });
-          }
-          return;
-        }
-
+        if (data.error === 'not_enough') { showToast('❌', 'Не хватает ' + formatNumber(data.need - data.have) + ' ' + COIN); return; }
+        if (data.error === 'premium_only') { showToast('💎', 'Только с Премиумом'); return; }
+        if (data.error === 'already_owned') { showToast('❌', 'Уже куплено'); return; }
         if (data.ok) {
-          count = data.newCount !== undefined ? data.newCount : count;
+          count = data.newCount;
           counterEl.textContent = formatNumber(count);
-          applyTheme(data.theme);
-
-          if (tg && tg.showPopup) {
-            tg.showPopup({
-              title: '✅ Куплено!',
-              message: data.theme.name + ' активирована',
-              buttons: [{ type: 'close' }]
-            });
-          }
+          showToast('✅', data.skin.name + ' куплен! Активируй в инвентаре');
           if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-
-          loadThemes();
+          loadSkins();
         }
-      } catch (e) {
-        console.error('Buy theme error:', e);
-      }
+      } catch (e) { console.error('Buy skin error:', e); }
     }
 
-    async function activateTheme(themeId) {
+    async function loadColors() {
+      colorsList.innerHTML = '<div class="loading">Загрузка...</div>';
       try {
-        const res = await fetch(API_URL + '/api/themes/activate', {
+        const res = await fetch(API_URL + '/api/colors', { headers: { 'X-Init-Data': tg ? tg.initData : '' } });
+        const data = await res.json();
+        window._colorsCache = {};
+        (data.colors || []).forEach(c => { window._colorsCache[c.id] = c; });
+        if (!data.colors || data.colors.length === 0) { colorsList.innerHTML = '<div class="empty">Цветов нет 😢</div>'; return; }
+        let html = '';
+        data.colors.forEach(c => {
+          const isActive = c.active ? 'shop-item-active' : '';
+          let btnText, btnDisabled;
+          if (c.owned) { btnText = '✅ Куплено'; btnDisabled = true; }
+          else { btnText = 'Купить'; btnDisabled = false; }
+          html += '<div class="shop-item ' + isActive + '">';
+          html += '<div class="shop-item-icon">' + c.icon + '</div>';
+          html += '<div class="shop-item-info"><div class="shop-item-name">' + escapeHtml(c.name) + '</div>';
+          html += '<div class="shop-item-desc">Цвет интерфейса</div></div>';
+          if (!c.owned) html += '<div class="shop-item-price">' + formatNumber(c.price) + ' ' + COIN + '</div>';
+          html += '<button class="shop-buy-btn" data-color="' + c.id + '"' + (btnDisabled ? ' disabled' : '') + '>' + btnText + '</button>';
+          html += '</div>';
+        });
+        colorsList.innerHTML = html;
+        document.querySelectorAll('.shop-buy-btn[data-color]').forEach(b => {
+          b.addEventListener('click', () => buyColor(b.dataset.color));
+        });
+      } catch (e) { colorsList.innerHTML = '<div class="empty">Ошибка загрузки 😢</div>'; }
+    }
+
+    async function buyColor(colorId) {
+      try {
+        const res = await fetch(API_URL + '/api/colors/buy', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Init-Data': tg ? tg.initData : ''
-          },
-          body: JSON.stringify({ themeId })
+          headers: { 'Content-Type': 'application/json', 'X-Init-Data': tg ? tg.initData : '' },
+          body: JSON.stringify({ colorId })
         });
         const data = await res.json();
-
+        if (data.error === 'not_enough') { showToast('❌', 'Не хватает ' + formatNumber(data.need - data.have) + ' ' + COIN); return; }
+        if (data.error === 'already_owned') { showToast('❌', 'Уже куплено'); return; }
         if (data.ok) {
-          applyTheme(data.theme);
+          count = data.newCount;
+          counterEl.textContent = formatNumber(count);
+          showToast('🎨', data.color.name + ' куплен! Активируй в инвентаре');
           if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-          loadThemes();
+          loadColors();
         }
-      } catch (e) {
-        console.error('Activate theme error:', e);
-      }
+      } catch (e) { console.error('Buy color error:', e); }
     }
-
-    // ============================================================
-    // 12. МАГАЗИН — БОНУСЫ
-    // ============================================================
 
     async function loadBonuses() {
-      const bonusesList = document.getElementById('bonusesList');
       bonusesList.innerHTML = '<div class="loading">Загрузка...</div>';
-
       try {
-        const res = await fetch(API_URL + '/api/bonuses', {
-          headers: { 'X-Init-Data': tg ? tg.initData : '' }
-        });
+        const res = await fetch(API_URL + '/api/bonuses', { headers: { 'X-Init-Data': tg ? tg.initData : '' } });
         const data = await res.json();
-
-        if (!data.bonuses || data.bonuses.length === 0) {
-          bonusesList.innerHTML = '<div class="empty">Бонусов пока нет 😢</div>';
-          return;
-        }
-
+        if (!data.bonuses || data.bonuses.length === 0) { bonusesList.innerHTML = '<div class="empty">Бонусов нет 😢</div>'; return; }
         let html = '';
         data.bonuses.forEach(b => {
           const isActive = b.active ? 'shop-item-active' : '';
           let btnText, btnDisabled;
+          let extraAttrs = '';
 
-          if (b.active) { btnText = '✅ Активен'; btnDisabled = true; }
-          else { btnText = 'Купить'; btnDisabled = false; }
+          if (b.active) {
+            btnText = '✅ Активен';
+            btnDisabled = true;
+            if (b.activeUntil) extraAttrs = ' data-active-until="' + b.activeUntil + '"';
+          } else if (b.onCooldown) {
+            btnText = '⏳ ' + formatTime(b.cooldownUntil - Date.now());
+            btnDisabled = true;
+            extraAttrs = ' data-cooldown="' + b.cooldownUntil + '"';
+          } else {
+            btnText = 'Купить';
+            btnDisabled = false;
+          }
 
           html += '<div class="shop-item ' + isActive + '">';
           html += '<div class="shop-item-icon">' + b.icon + '</div>';
-          html += '<div class="shop-item-info">';
-          html += '<div class="shop-item-name">' + escapeHtml(b.name) + '</div>';
-          html += '<div class="shop-item-desc">' + escapeHtml(b.desc) + '</div>';
-          html += '</div>';
+          html += '<div class="shop-item-info"><div class="shop-item-name">' + escapeHtml(b.name) + '</div>';
+          html += '<div class="shop-item-desc">' + escapeHtml(b.desc) + '</div></div>';
           html += '<div class="shop-item-price">' + formatNumber(b.price) + ' ' + COIN + '</div>';
-          html += '<button class="shop-buy-btn" data-bonus="' + b.id + '"' + (btnDisabled ? ' disabled' : '') + '>' + btnText + '</button>';
+          html += '<button class="shop-buy-btn" data-bonus="' + b.id + '"' + extraAttrs + (btnDisabled ? ' disabled' : '') + '>' + btnText + '</button>';
           html += '</div>';
         });
-
         bonusesList.innerHTML = html;
 
         currentMultiplier = data.multiplier || 1;
         updateMultiplierBadge();
 
-        document.querySelectorAll('[data-bonus]').forEach(btn => {
-          btn.addEventListener('click', () => buyBonus(btn.dataset.bonus));
+        document.querySelectorAll('[data-bonus]').forEach(b => {
+          b.addEventListener('click', () => buyBonus(b.dataset.bonus));
         });
-      } catch (e) {
-        bonusesList.innerHTML = '<div class="empty">Ошибка загрузки 😢</div>';
-        console.error(e);
-      }
+      } catch (e) { bonusesList.innerHTML = '<div class="empty">Ошибка загрузки 😢</div>'; }
     }
 
     async function buyBonus(bonusId) {
       try {
         const res = await fetch(API_URL + '/api/bonuses/buy', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Init-Data': tg ? tg.initData : ''
-          },
+          headers: { 'Content-Type': 'application/json', 'X-Init-Data': tg ? tg.initData : '' },
           body: JSON.stringify({ bonusId })
         });
         const data = await res.json();
-
-        if (data.error === 'not_enough') {
-          if (tg && tg.showPopup) {
-            tg.showPopup({
-              title: 'Недостаточно средств',
-              message: 'Нужно: ' + formatNumber(data.need) + ' ' + COIN + '\nУ тебя: ' + formatNumber(data.have) + ' ' + COIN,
-              buttons: [{ type: 'close' }]
-            });
-          }
-          return;
-        }
-
-        if (data.error === 'already_active') {
-          if (tg && tg.showPopup) {
-            tg.showPopup({
-              title: 'Уже активно',
-              message: data.message || 'Этот бонус уже действует',
-              buttons: [{ type: 'close' }]
-            });
-          }
-          return;
-        }
-
+        if (data.error === 'not_enough') { showToast('❌', 'Не хватает ' + formatNumber(data.need - data.have) + ' ' + COIN); return; }
+        if (data.error === 'already_active') { showToast('⏳', data.message || 'Уже активно'); return; }
+        if (data.error === 'cooldown') { showToast('⏳', 'КД: ' + formatTime(data.remaining)); return; }
         if (data.ok) {
           count = data.newCount;
           counterEl.textContent = formatNumber(count);
-
           if (bonusId === 'premium') {
-            if (tg && tg.showPopup) {
-              tg.showPopup({
-                title: '💎 Премиум куплен!',
-                message: 'Теперь рядом с твоим ником значок 💎',
-                buttons: [{ type: 'close' }]
-              });
-            }
+            showToast('💎', 'Премиум — ' + formatNumber(data.bonus.price) + ' ' + COIN);
           } else {
             currentMultiplier = data.bonus.multiplier || 1;
-            if (tg && tg.showPopup) {
-              const mins = Math.round(data.bonus.duration / 60000 * 10) / 10;
-              tg.showPopup({
-                title: '✅ Активировано!',
-                message: data.bonus.name + ' — действует ' + mins + ' мин',
-                buttons: [{ type: 'close' }]
-              });
-            }
+            showToast(data.bonus.icon, data.bonus.name + ' — ' + formatNumber(data.bonus.price) + ' ' + COIN);
             startMultiplierTimer(data.expiresAt);
           }
-
           if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
           loadBonuses();
         }
-      } catch (e) {
-        console.error('Buy bonus error:', e);
-      }
+      } catch (e) { console.error('Buy bonus error:', e); }
     }
 
     function startMultiplierTimer(expiresAt) {
       if (multiplierTimer) clearInterval(multiplierTimer);
-
       const update = () => {
         const remaining = expiresAt - Date.now();
-        if (remaining <= 0) {
-          currentMultiplier = 1;
-          updateMultiplierBadge();
-          clearInterval(multiplierTimer);
-          multiplierTimer = null;
-          return;
-        }
+        if (remaining <= 0) { currentMultiplier = 1; updateMultiplierBadge(); clearInterval(multiplierTimer); multiplierTimer = null; return; }
         updateMultiplierBadge(remaining);
       };
-
       update();
       multiplierTimer = setInterval(update, 1000);
     }
 
     function updateMultiplierBadge(remaining) {
       let badge = document.getElementById('multiplierBadge');
-
-      if (currentMultiplier <= 1) {
-        if (badge) badge.remove();
-        return;
-      }
-
+      if (currentMultiplier <= 1) { if (badge) badge.remove(); return; }
       if (!badge) {
         badge = document.createElement('div');
         badge.id = 'multiplierBadge';
         badge.className = 'multiplier-badge';
-        const container = document.querySelector('#screen-clicker .container');
-        container.appendChild(badge);
+        document.querySelector('#screen-clicker .container').appendChild(badge);
       }
-
       let text = '⚡ x' + currentMultiplier;
-      if (remaining && remaining > 0) {
-        const sec = Math.ceil(remaining / 1000);
-        text += ' · ' + sec + 'с';
-      }
+      if (remaining && remaining > 0) text += ' · ' + Math.ceil(remaining / 1000) + 'с';
       badge.textContent = text;
+    }
+          async function loadInventory() {
+      inventoryList.innerHTML = '<div class="loading">Загрузка...</div>';
+      try {
+        const res = await fetch(API_URL + '/api/inventory', { headers: { 'X-Init-Data': tg ? tg.initData : '' } });
+        const data = await res.json();
+        if (!data.items || data.items.length === 0) { inventoryList.innerHTML = '<div class="empty">Инвентарь пуст 😢</div>'; return; }
+
+        const meRes = await fetch(API_URL + '/api/me', { headers: { 'X-Init-Data': tg ? tg.initData : '' } });
+        const me = await meRes.json();
+        const activeSkin = me.skin || 'default';
+        const activeColor = me.color || 'default';
+
+        const order = { skin: 1, color: 2, premium: 3, bonus: 4 };
+        data.items.sort((a, b) => (order[a.type] || 9) - (order[b.type] || 9));
+
+        let html = '';
+        data.items.forEach(it => {
+          let isActive = false, btnText = 'Применить', btnDisabled = false, badge = '';
+          let extraAttrs = '';
+
+          if (it.type === 'skin') {
+            const skinId = it.itemId.replace('skin_', '');
+            isActive = skinId === activeSkin;
+            btnText = isActive ? '✅ Активен' : 'Применить';
+            btnDisabled = isActive;
+            badge = '<div class="shop-item-desc">Скин</div>';
+          } else if (it.type === 'color') {
+            const colorId = it.itemId.replace('color_', '');
+            isActive = colorId === activeColor;
+            btnText = isActive ? '✅ Активен' : 'Применить';
+            btnDisabled = isActive;
+            badge = '<div class="shop-item-desc">Цвет</div>';
+          } else if (it.type === 'bonus') {
+            if (it.expiresAt && it.expiresAt > Date.now()) {
+              btnText = '⏳ ' + formatTime(it.expiresAt - Date.now());
+              btnDisabled = true;
+              isActive = true;
+              extraAttrs = ' data-inv-active="' + it.expiresAt + '"';
+            } else {
+              btnText = '✅ Использован';
+              btnDisabled = true;
+            }
+            badge = '<div class="shop-item-desc">Бонус</div>';
+          } else if (it.type === 'premium') {
+            isActive = true;
+            btnText = '✅ Активен';
+            btnDisabled = true;
+            badge = '<div class="shop-item-desc">Навсегда</div>';
+          }
+
+          html += '<div class="shop-item ' + (isActive ? 'shop-item-active' : '') + '">';
+          html += '<div class="shop-item-icon">' + it.icon + '</div>';
+          html += '<div class="shop-item-info"><div class="shop-item-name">' + escapeHtml(it.name) + '</div>';
+          html += badge + '</div>';
+          html += '<button class="shop-buy-btn" data-inv="' + it.itemId + '" data-type="' + it.type + '"' + extraAttrs + (btnDisabled ? ' disabled' : '') + '>' + btnText + '</button>';
+          html += '</div>';
+        });
+        inventoryList.innerHTML = html;
+
+        document.querySelectorAll('[data-inv]').forEach(b => {
+          b.addEventListener('click', () => activateInventoryItem(b.dataset.inv, b.dataset.type));
+        });
+      } catch (e) { inventoryList.innerHTML = '<div class="empty">Ошибка загрузки 😢</div>'; }
+    }
+
+    async function activateInventoryItem(itemId, type) {
+      try {
+        if (type === 'skin') {
+          const skinId = itemId.replace('skin_', '');
+          const res = await fetch(API_URL + '/api/inventory/activate/skin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Init-Data': tg ? tg.initData : '' },
+            body: JSON.stringify({ skinId })
+          });
+          const data = await res.json();
+          if (data.ok) {
+            applySkin(data.skin.id, data.skin.icon);
+            showToast('🎨', data.skin.name + ' применён');
+            if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            loadInventory();
+          } else showToast('❌', data.error === 'premium_only' ? 'Только с Премиумом' : 'Ошибка');
+        } else if (type === 'color') {
+          const colorId = itemId.replace('color_', '');
+          const res = await fetch(API_URL + '/api/inventory/activate/color', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Init-Data': tg ? tg.initData : '' },
+            body: JSON.stringify({ colorId })
+          });
+          const data = await res.json();
+          if (data.ok) {
+            applyColor(data.color.id);
+            showToast('🎨', data.color.name + ' применён');
+            if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            loadInventory();
+          } else showToast('❌', 'Ошибка');
+        }
+      } catch (e) { console.error('Activate error:', e); }
     }
 
     // ============================================================
-    // 13. ПРОМОКОДЫ
+    // ЛЁГКИЙ ТАЙМЕР (без запросов)
+    // ============================================================
+
+    setInterval(() => {
+      const now = Date.now();
+
+      // КД в бонусах
+      document.querySelectorAll('#bonusesList [data-cooldown]').forEach(b => {
+        const until = parseInt(b.dataset.cooldown, 10);
+        const remaining = until - now;
+        if (remaining > 0) {
+          b.textContent = '⏳ ' + formatTime(remaining);
+        } else {
+          b.textContent = 'Купить';
+          b.disabled = false;
+          b.removeAttribute('data-cooldown');
+        }
+      });
+
+      // Активные бонусы в бонусах
+      document.querySelectorAll('#bonusesList [data-active-until]').forEach(b => {
+        const until = parseInt(b.dataset.activeUntil, 10);
+        const remaining = until - now;
+        if (remaining > 0) {
+          b.textContent = '✅ ' + Math.ceil(remaining / 1000) + 'с';
+        }
+      });
+
+      // Истёкшие бонусы в инвентаре — удаляем карточку
+      document.querySelectorAll('#inventoryList [data-inv-active]').forEach(b => {
+        const until = parseInt(b.dataset.invActive, 10);
+        const remaining = until - now;
+        if (remaining > 0) {
+          b.textContent = '⏳ ' + formatTime(remaining);
+        } else {
+          const card = b.closest('.shop-item');
+          if (card) {
+            card.style.transition = 'opacity 0.3s ease';
+            card.style.opacity = '0';
+            setTimeout(() => card.remove(), 300);
+          }
+        }
+      });
+    }, 500);
+
+    // ============================================================
+    // ПРОМОКОД
     // ============================================================
 
     const promoBtn = document.getElementById('promoBtn');
     const promoInput = document.getElementById('promoInput');
-
     if (promoBtn) {
       promoBtn.addEventListener('click', activatePromo);
-      promoInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') activatePromo();
-      });
+      promoInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') activatePromo(); });
     }
 
     async function activatePromo() {
       const code = (promoInput.value || '').trim().toUpperCase();
-
-      if (!code) {
-        if (tg && tg.showAlert) tg.showAlert('Введи промокод');
-        return;
-      }
-
+      if (!code) { showToast('❌', 'Введи промокод'); return; }
       promoBtn.disabled = true;
       promoBtn.textContent = '...';
-
       try {
         const res = await fetch(API_URL + '/api/promo', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Init-Data': tg ? tg.initData : ''
-          },
+          headers: { 'Content-Type': 'application/json', 'X-Init-Data': tg ? tg.initData : '' },
           body: JSON.stringify({ code })
         });
         const data = await res.json();
-
         if (data.ok) {
           count = data.newCount;
           counterEl.textContent = formatNumber(count);
           promoInput.value = '';
-
-          if (tg && tg.showPopup) {
-            tg.showPopup({
-              title: '🎁 Промокод активирован!',
-              message: '+' + formatNumber(data.reward) + ' ' + COIN,
-              buttons: [{ type: 'close' }]
-            });
-          }
+          showToast('🎁', '+' + formatNumber(data.reward) + ' ' + COIN);
           if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-        } else {
-          if (tg && tg.showAlert) tg.showAlert(data.message || 'Ошибка');
-        }
-      } catch (e) {
-        console.error('Promo error:', e);
-        if (tg && tg.showAlert) tg.showAlert('Ошибка сети');
-      } finally {
-        promoBtn.disabled = false;
-        promoBtn.textContent = 'Активировать';
-      }
+        } else showToast('❌', data.message || 'Ошибка');
+      } catch (e) { showToast('❌', 'Ошибка сети'); }
+      finally { promoBtn.disabled = false; promoBtn.textContent = 'Активировать'; }
     }
 
     // ============================================================
-    // 14. НИЖНЯЯ НАВИГАЦИЯ
+    // НИЖНЯЯ НАВИГАЦИЯ
     // ============================================================
 
     document.getElementById('donateBtn').addEventListener('click', () => {
@@ -1278,35 +1161,15 @@
       else window.open(DONATE_URL, '_blank');
       if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     });
-
     document.getElementById('channelBtn').addEventListener('click', () => {
       if (tg && tg.openTelegramLink) tg.openTelegramLink(CHANNEL_URL);
       else window.open(CHANNEL_URL, '_blank');
       if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     });
-
     document.getElementById('infoBtn').addEventListener('click', () => {
-      if (tg && tg.showPopup) {
-        tg.showPopup({
-          title: 'О боте',
-          message: 'BasicClickBot — кликер с лидербордом.\n\n' +
-                   '🎯 Жми кнопку, чтобы заработать ' + COIN + '\n' +
-                   '🛒 Покупай темы и бонусы\n' +
-                   '🏆 Соревнуйся в рейтинге\n' +
-                   '💎 Купи Премиум\n' +
-                   '🎁 Активируй промокоды\n\n' +
-                   'Версия 2.0',
-          buttons: [{ type: 'close' }]
-        });
-      } else {
-        alert('BasicClickBot — кликер. Версия 2.0');
-      }
+      showToast('ℹ️', 'BasicClickBot v2.0');
       if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     });
-
-    // ============================================================
-    // 15. СТАРТ
-    // ============================================================
 
     loadCount();
   </script>
