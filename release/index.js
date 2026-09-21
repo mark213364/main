@@ -257,9 +257,9 @@ async function handleGive(message, env) {
   const newCount = Math.max(0, (row.count ?? 0) + amount);
 
   await env.DB.prepare(
-    'UPDATE counters SET count = ? WHERE chat_id = ?'
-  ).bind(newCount, targetId).run();
-
+    'UPDATE counters SET count = ?, reset_at = ? WHERE chat_id = ?'
+  ).bind(newCount, Date.now(), targetId).run();
+  
   await sendMessage(env.BOT_TOKEN, message.chat.id,
     '✅ Начислено *' + amount.toLocaleString('ru-RU') + '* ' + COIN_EMOJI + '\n' +
     'Игрок: `' + targetId + '`\n' +
