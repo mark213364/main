@@ -24,7 +24,7 @@ const COLORS = {
 };
 
 // ============================================================
-// СКИНЫ
+// СКИНЫ КНОПКИ
 // ============================================================
 const SKINS = {
   default: { id: 'default', name: 'Стандарт', icon: '⭕', price: 0 },
@@ -68,8 +68,7 @@ const BONUSES = {
 // ПРОМОКОДЫ
 // ============================================================
 const PROMOS = {
-  'FREE500K': { code: 'FREE500K', reward: 500000 },
-  'FREESUCKS': { code: 'FREESUCKS', reward: 1000000 },
+  'FREE500К': { code: 'FREE500К', reward: 500000 },
 };
 
 // ============================================================
@@ -342,7 +341,7 @@ async function handleApi(request, env, path, corsHeaders) {
 
   // ===== ИНВЕНТАРЬ =====
   if (path === '/api/inventory' && request.method === 'GET') {
-    // АВТООЧИСТКА истёкших бонусов
+    // Автоочистка истёкших бонусов
     await env.DB.prepare(
       `DELETE FROM purchases
        WHERE chat_id = ?
