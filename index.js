@@ -1,18 +1,13 @@
 // ============================================================
-// ⚙️ ЧАСТЬ 1: ЧТО МЕНЯЕШЬ ЧАСТО
+// BASICCLICKBOT — Cloudflare Worker
 // ============================================================
 
-// 🆔 Твой Telegram ID (админ)
 const ADMIN_ID = 5946292761;
-
-// 💰 Эмодзи валюты
 const COIN_EMOJI = '🪙';
-
-// 🌐 URL мини-приложения (для кнопки в /start)
 const WEBAPP_URL = 'https://mark213364.github.io/main/index.html';
 
 // ============================================================
-// 🎨 ЦВЕТА (все по 1000)
+// ЦВЕТА
 // ============================================================
 const COLORS = {
   red:    { id: 'red',    name: 'Красный',    icon: '🔴', price: 1000, hex: '#ef4444' },
@@ -29,7 +24,7 @@ const COLORS = {
 };
 
 // ============================================================
-// 🎯 СКИНЫ КНОПКИ (💎 gem = премиум-скин)
+// СКИНЫ КНОПКИ
 // ============================================================
 const SKINS = {
   default: { id: 'default', name: 'Стандарт', icon: '⭕', price: 0 },
@@ -47,7 +42,7 @@ const SKINS = {
 };
 
 // ============================================================
-// 🎁 БОНУСЫ
+// БОНУСЫ
 // ============================================================
 const BONUSES = {
   multiplier2: {
@@ -68,16 +63,15 @@ const BONUSES = {
 };
 
 // ============================================================
-// 🎁 ПРОМОКОДЫ
+// ПРОМОКОДЫ
 // ============================================================
 const PROMOS = {
   'FREE500К': { code: 'FREE500К', reward: 500000 },
 };
 
 // ============================================================
-// ⚙️ ЧАСТЬ 2: РЕДКО МЕНЯЕШЬ (логика)
+// WORKER — точка входа
 // ============================================================
-
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -118,7 +112,7 @@ export default {
 };
 
 // ============================================================
-// TELEGRAM
+// TELEGRAM — обработчики
 // ============================================================
 
 async function handleStart(message, env) {
@@ -178,8 +172,7 @@ async function handleWipe(message, env) {
     '• Счёт → 0\n• Цвета и скины → сброшены\n• Премиум → выключен\n' +
     '• Покупки → очищены\n• Промокоды → доступны заново'
   );
-}
-
+  }
 // ============================================================
 // API
 // ============================================================
@@ -339,9 +332,8 @@ async function handleApi(request, env, path, corsHeaders) {
     }
     await env.DB.prepare('UPDATE counters SET skin = ? WHERE chat_id = ?').bind(skin.id, userId).run();
     return json({ ok: true, skin }, 200, corsHeaders);
-  }
-
-  // ===== ИНВЕНТАРЬ =====
+    }
+    // ===== ИНВЕНТАРЬ =====
   if (path === '/api/inventory' && request.method === 'GET') {
     const purchases = await env.DB.prepare(
       `SELECT item_id, expires_at, created_at FROM purchases
@@ -432,4 +424,70 @@ async function handleApi(request, env, path, corsHeaders) {
   if (path === '/api/promo' && request.method === 'POST') {
     let body; try { body = await request.json(); } catch { return json({ error: 'invalid body' }, 400, corsHeaders); }
     const code = (body.code || '').trim().toUpperCase();
-    if (!code) return json({ error: 'empty_code', 
+    if (!code) return json({ error: 'empty_code', message: 'Введи промокод' }, 400, corsHeaders);
+    const promo = PROMOS[code];
+    if (!promo) return json({ error: 'invalid_code', message: 'Промокод не существует' }, 404, corsHeaders);
+    const used = await env.DB.prepare(
+      'SELECT id FROM used_promos WHERE chat_id = ? AND promo_code = ?'
+    ).bind(userId, code).first();
+    if (used) return json({ error: 'already_used', message: 'Ты уже использовал этот промокод' }, 400, corsHeaders);
+    const row = await env.DB.prepare('SELECT count FROM counters WHERE chat_id = ?').bind(userId).first();
+    const cur = row?.count ?? 0;
+    const newCount = cur + promo.reward;
+    await env.DB.prepare('UPDATE counters SET count = ? WHERE chat_id = ?').bind(newCount, userId).run();
+    await env.DB.prepare(
+      `INSERT INTO used_promos (chat_id, promo_code, used_at) VALUES (?, ?, ?)`
+    ).bind(userId, code, Date.now()).run();
+    return json({ ok: true, reward: promo.reward, newCount }, 200, corsHeaders);
+  }
+
+  return json({ error: 'not found' }, 404, corsHeaders);
+}
+
+// ============================================================
+// ХЕЛПЕРЫ
+// ============================================================
+
+function json(data, status, corsHeaders) {
+  return new Response(JSON.stringify(data), {
+    status, headers: { 'Content-Type': 'application/json', ...corsHeaders }
+  });
+}
+
+async function sendMessage(token, chatId, text, keyboard) {
+  return fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'Markdown', reply_markup: keyboard })
+  });
+}
+
+async function verifyInitData(initData, botToken) {
+  if (!initData) return null;
+  try {
+    const params = new URLSearchParams(initData);
+    const hash = params.get('hash');
+    if (!hash) return null;
+    params.delete('hash');
+    const entries = [...params.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+    let dataCheckString = '';
+    for (let i = 0; i < entries.length; i++) {
+      if (i > 0) dataCheckString += '\n';
+      dataCheckString += entries[i][0] + '=' + entries[i][1];
+    }
+    const authDate = parseInt(params.get('auth_date'), 10);
+    if (!authDate || Date.now() / 1000 - authDate > 86400) return null;
+    const encoder = new TextEncoder();
+    const secretKey = await crypto.subtle.importKey('raw', encoder.encode('WebAppData'), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    const derivedKey = await crypto.subtle.sign('HMAC', secretKey, encoder.encode(botToken));
+    const verifyKey = await crypto.subtle.importKey('raw', derivedKey, { name: 'HMAC', hash: 'SHA-256' }, false, ['verify']);
+    const hashBytes = new Uint8Array(hash.match(/.{1,2}/g).map(b => parseInt(b, 16)));
+    const isValid = await crypto.subtle.verify('HMAC', verifyKey, hashBytes, encoder.encode(dataCheckString));
+    if (!isValid) return null;
+    const user = JSON.parse(params.get('user') || '{}');
+    return user.id || null;
+  } catch (e) {
+    console.error('verifyInitData error:', e.message);
+    return null;
+  }
+}
