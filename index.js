@@ -42,18 +42,20 @@ const SKINS = {
 };
 
 // ============================================================
-// БОНУСЫ
+// БОНУСЫ + КД
 // ============================================================
+const BONUS_COOLDOWN = 5 * 60 * 1000; // 5 минут
+
 const BONUSES = {
   multiplier2: {
     id: 'multiplier2', name: 'x2 кликов', icon: '⚡',
-    desc: 'Удваивает клики на 2 минуты', price: 800,
-    duration: 2 * 60 * 1000, multiplier: 2,
+    desc: 'Удваивает клики на 3 минуты', price: 1200,
+    duration: 3 * 60 * 1000, multiplier: 2,
   },
   multiplier5: {
     id: 'multiplier5', name: 'x5 кликов', icon: '🔥',
-    desc: 'Пятикратные клики на 1.5 минуты', price: 2500,
-    duration: 90 * 1000, multiplier: 5,
+    desc: 'Пятикратные клики на 3 минуты', price: 3200,
+    duration: 3 * 60 * 1000, multiplier: 5,
   },
   premium: {
     id: 'premium', name: 'Премиум', icon: '💎',
@@ -70,7 +72,7 @@ const PROMOS = {
 };
 
 // ============================================================
-// WORKER — точка входа
+// WORKER
 // ============================================================
 export default {
   async fetch(request, env) {
@@ -112,7 +114,7 @@ export default {
 };
 
 // ============================================================
-// TELEGRAM — обработчики
+// TELEGRAM
 // ============================================================
 
 async function handleStart(message, env) {
@@ -172,7 +174,8 @@ async function handleWipe(message, env) {
     '• Счёт → 0\n• Цвета и скины → сброшены\n• Премиум → выключен\n' +
     '• Покупки → очищены\n• Промокоды → доступны заново'
   );
-  }
+}
+
 // ============================================================
 // API
 // ============================================================
@@ -238,33 +241,19 @@ async function handleApi(request, env, path, corsHeaders) {
     const existing = await env.DB.prepare(
       `SELECT id FROM purchases WHERE chat_id = ? AND item_id = ?`
     ).bind(userId, 'color_' + color.id).first();
-    if (existing) {
-      await env.DB.prepare('UPDATE counters SET color = ? WHERE chat_id = ?').bind(color.id, userId).run();
-      return json({ ok: true, activated: true, color }, 200, corsHeaders);
-    }
+    if (existing) return json({ error: 'already_owned', message: 'Уже куплено' }, 400, corsHeaders);
+
     const row = await env.DB.prepare('SELECT count FROM counters WHERE chat_id = ?').bind(userId).first();
     const cur = row?.count ?? 0;
     if (cur < color.price) return json({ error: 'not_enough', need: color.price, have: cur }, 400, corsHeaders);
 
     const newCount = cur - color.price;
-    await env.DB.prepare('UPDATE counters SET count = ?, color = ? WHERE chat_id = ?')
-      .bind(newCount, color.id, userId).run();
+    await env.DB.prepare('UPDATE counters SET count = ? WHERE chat_id = ?').bind(newCount, userId).run();
     await env.DB.prepare(
       `INSERT INTO purchases (chat_id, item_id, expires_at, created_at) VALUES (?, ?, NULL, ?)`
     ).bind(userId, 'color_' + color.id, Date.now()).run();
-    return json({ ok: true, newCount, color }, 200, corsHeaders);
-  }
 
-  if (path === '/api/colors/activate' && request.method === 'POST') {
-    let body; try { body = await request.json(); } catch { return json({ error: 'invalid body' }, 400, corsHeaders); }
-    const color = COLORS[body.colorId];
-    if (!color) return json({ error: 'not found' }, 404, corsHeaders);
-    const existing = await env.DB.prepare(
-      `SELECT id FROM purchases WHERE chat_id = ? AND item_id = ?`
-    ).bind(userId, 'color_' + color.id).first();
-    if (!existing) return json({ error: 'not_owned' }, 400, corsHeaders);
-    await env.DB.prepare('UPDATE counters SET color = ? WHERE chat_id = ?').bind(color.id, userId).run();
-    return json({ ok: true, color }, 200, corsHeaders);
+    return json({ ok: true, newCount, color }, 200, corsHeaders);
   }
 
   // ===== СКИНЫ =====
@@ -296,24 +285,23 @@ async function handleApi(request, env, path, corsHeaders) {
     const existing = await env.DB.prepare(
       `SELECT id FROM purchases WHERE chat_id = ? AND item_id = ?`
     ).bind(userId, 'skin_' + skin.id).first();
-    if (existing) {
-      await env.DB.prepare('UPDATE counters SET skin = ? WHERE chat_id = ?').bind(skin.id, userId).run();
-      return json({ ok: true, activated: true, skin }, 200, corsHeaders);
-    }
+    if (existing) return json({ error: 'already_owned', message: 'Уже куплено' }, 400, corsHeaders);
+
     const row = await env.DB.prepare('SELECT count FROM counters WHERE chat_id = ?').bind(userId).first();
     const cur = row?.count ?? 0;
     if (cur < skin.price) return json({ error: 'not_enough', need: skin.price, have: cur }, 400, corsHeaders);
 
     const newCount = cur - skin.price;
-    await env.DB.prepare('UPDATE counters SET count = ?, skin = ? WHERE chat_id = ?')
-      .bind(newCount, skin.id, userId).run();
+    await env.DB.prepare('UPDATE counters SET count = ? WHERE chat_id = ?').bind(newCount, userId).run();
     await env.DB.prepare(
       `INSERT INTO purchases (chat_id, item_id, expires_at, created_at) VALUES (?, ?, NULL, ?)`
     ).bind(userId, 'skin_' + skin.id, Date.now()).run();
+
     return json({ ok: true, newCount, skin }, 200, corsHeaders);
   }
 
-  if (path === '/api/skins/activate' && request.method === 'POST') {
+  // ===== ИНВЕНТАРЬ — АКТИВАЦИЯ СКИНА =====
+  if (path === '/api/inventory/activate/skin' && request.method === 'POST') {
     let body; try { body = await request.json(); } catch { return json({ error: 'invalid body' }, 400, corsHeaders); }
     const skin = SKINS[body.skinId];
     if (!skin) return json({ error: 'not found' }, 404, corsHeaders);
@@ -323,17 +311,35 @@ async function handleApi(request, env, path, corsHeaders) {
         `SELECT id FROM purchases WHERE chat_id = ? AND item_id = ?`
       ).bind(userId, 'skin_' + skin.id).first();
 
-      if (!existing && skin.premiumOnly) {
-        const userRow = await env.DB.prepare('SELECT is_premium FROM counters WHERE chat_id = ?').bind(userId).first();
-        if ((userRow?.is_premium ?? 0) !== 1) return json({ error: 'premium_only' }, 400, corsHeaders);
-      } else if (!existing) {
-        return json({ error: 'not_owned' }, 400, corsHeaders);
+      if (!existing) {
+        if (skin.premiumOnly) {
+          const userRow = await env.DB.prepare('SELECT is_premium FROM counters WHERE chat_id = ?').bind(userId).first();
+          if ((userRow?.is_premium ?? 0) !== 1) return json({ error: 'premium_only' }, 400, corsHeaders);
+        } else {
+          return json({ error: 'not_owned' }, 400, corsHeaders);
+        }
       }
     }
     await env.DB.prepare('UPDATE counters SET skin = ? WHERE chat_id = ?').bind(skin.id, userId).run();
     return json({ ok: true, skin }, 200, corsHeaders);
-    }
-    // ===== ИНВЕНТАРЬ =====
+  }
+
+  // ===== ИНВЕНТАРЬ — АКТИВАЦИЯ ЦВЕТА =====
+  if (path === '/api/inventory/activate/color' && request.method === 'POST') {
+    let body; try { body = await request.json(); } catch { return json({ error: 'invalid body' }, 400, corsHeaders); }
+    const color = COLORS[body.colorId];
+    if (!color) return json({ error: 'not found' }, 404, corsHeaders);
+
+    const existing = await env.DB.prepare(
+      `SELECT id FROM purchases WHERE chat_id = ? AND item_id = ?`
+    ).bind(userId, 'color_' + color.id).first();
+    if (!existing) return json({ error: 'not_owned' }, 400, corsHeaders);
+
+    await env.DB.prepare('UPDATE counters SET color = ? WHERE chat_id = ?').bind(color.id, userId).run();
+    return json({ ok: true, color }, 200, corsHeaders);
+  }
+
+  // ===== ИНВЕНТАРЬ =====
   if (path === '/api/inventory' && request.method === 'GET') {
     const purchases = await env.DB.prepare(
       `SELECT item_id, expires_at, created_at FROM purchases
@@ -368,18 +374,43 @@ async function handleApi(request, env, path, corsHeaders) {
        WHERE chat_id = ? AND expires_at IS NOT NULL AND expires_at > ?`
     ).bind(userId, now).all();
     const userRow = await env.DB.prepare('SELECT is_premium FROM counters WHERE chat_id = ?').bind(userId).first();
+
     let multiplier = 1, activeUntil = 0;
     purchases.results.forEach(p => {
       if (p.item_id === 'multiplier2') { multiplier = Math.max(multiplier, 2); activeUntil = Math.max(activeUntil, p.expires_at); }
       else if (p.item_id === 'multiplier5') { multiplier = Math.max(multiplier, 5); activeUntil = Math.max(activeUntil, p.expires_at); }
     });
+
+    const cooldowns = {};
+    for (const bonusId of ['multiplier2', 'multiplier5']) {
+      const lastEnded = await env.DB.prepare(
+        `SELECT expires_at FROM purchases
+         WHERE chat_id = ? AND item_id = ?
+           AND expires_at IS NOT NULL AND expires_at <= ?
+         ORDER BY expires_at DESC LIMIT 1`
+      ).bind(userId, bonusId, now).first();
+
+      if (lastEnded) {
+        const cooldownUntil = lastEnded.expires_at + BONUS_COOLDOWN;
+        if (now < cooldownUntil) cooldowns[bonusId] = cooldownUntil;
+      }
+    }
+
     const bonuses = Object.values(BONUSES).map(b => {
       let active = false;
       if (b.id === 'premium') active = (userRow?.is_premium ?? 0) === 1;
       else active = purchases.results.some(p => p.item_id === b.id);
-      return { ...b, active };
+
+      const cooldownUntil = cooldowns[b.id] || 0;
+      const onCooldown = cooldownUntil > now;
+
+      return { ...b, active, onCooldown, cooldownUntil };
     });
-    return json({ bonuses, multiplier, activeUntil, coinEmoji: COIN_EMOJI }, 200, corsHeaders);
+
+    return json({
+      bonuses, multiplier, activeUntil,
+      coinEmoji: COIN_EMOJI,
+    }, 200, corsHeaders);
   }
 
   if (path === '/api/bonuses/buy' && request.method === 'POST') {
@@ -405,7 +436,26 @@ async function handleApi(request, env, path, corsHeaders) {
       `SELECT id FROM purchases WHERE chat_id = ? AND item_id = ?
          AND expires_at IS NOT NULL AND expires_at > ?`
     ).bind(userId, bonus.id, now).first();
-    if (active) return json({ error: 'already_active' }, 400, corsHeaders);
+    if (active) return json({ error: 'already_active', message: 'Бонус уже действует' }, 400, corsHeaders);
+
+    const lastEnded = await env.DB.prepare(
+      `SELECT expires_at FROM purchases
+       WHERE chat_id = ? AND item_id = ?
+         AND expires_at IS NOT NULL AND expires_at <= ?
+       ORDER BY expires_at DESC LIMIT 1`
+    ).bind(userId, bonus.id, now).first();
+
+    if (lastEnded) {
+      const cooldownUntil = lastEnded.expires_at + BONUS_COOLDOWN;
+      if (now < cooldownUntil) {
+        return json({
+          error: 'cooldown',
+          message: 'Подожди перед следующей покупкой',
+          remaining: cooldownUntil - now,
+          cooldownUntil,
+        }, 400, corsHeaders);
+      }
+    }
 
     const row = await env.DB.prepare('SELECT count FROM counters WHERE chat_id = ?').bind(userId).first();
     const cur = row?.count ?? 0;
