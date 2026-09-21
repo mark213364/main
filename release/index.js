@@ -65,9 +65,9 @@ const BONUSES = {
 };
 
 // ============================================================
-// ПРОМОКОДЫ
+// БАЗОВЫЕ ПРОМОКОДЫ
 // ============================================================
-const PROMOS = {
+const BASE_PROMOS = {
   'FREE500K': { code: 'FREE500K', reward: 500000 },
 };
 
@@ -104,6 +104,8 @@ export default {
       if (message && message.text === '/start') await handleStart(message, env);
       if (message && message.text && message.text.startsWith('/reset ')) await handleReset(message, env);
       if (message && message.text === '/wipe' && message.from.id === ADMIN_ID) await handleWipe(message, env);
+      if (message && message.text && message.text.startsWith('/give ')) await handleGive(message, env);
+      if (message && message.text && message.text.startsWith('/createpromo ')) await handleCreatePromo(message, env);
 
       return new Response('OK', { status: 200 });
     } catch (e) {
@@ -156,17 +158,18 @@ async function handleReset(message, env) {
     return;
   }
   await env.DB.prepare(
-    'UPDATE counters SET count = 0, color = "default", skin = "default", is_premium = 0 WHERE chat_id = ?'
-  ).bind(targetId).run();
+    'UPDATE counters SET count = 0, color = "default", skin = "default", is_premium = 0, reset_at = ? WHERE chat_id = ?'
+  ).bind(Date.now(), targetId).run();
   await env.DB.prepare('DELETE FROM purchases WHERE chat_id = ?').bind(targetId).run();
   await env.DB.prepare('DELETE FROM used_promos WHERE chat_id = ?').bind(targetId).run();
   await sendMessage(env.BOT_TOKEN, message.chat.id, `✅ Сброшено для ID ${targetId}`);
 }
 
 async function handleWipe(message, env) {
+  const now = Date.now();
   await env.DB.prepare(
-    'UPDATE counters SET count = 0, color = "default", skin = "default", is_premium = 0'
-  ).run();
+    'UPDATE counters SET count = 0, color = "default", skin = "default", is_premium = 0, reset_at = ?'
+  ).bind(now).run();
   await env.DB.prepare('DELETE FROM purchases').run();
   await env.DB.prepare('DELETE FROM used_promos').run();
   await sendMessage(env.BOT_TOKEN, message.chat.id,
@@ -174,6 +177,122 @@ async function handleWipe(message, env) {
     '• Счёт → 0\n• Цвета и скины → сброшены\n• Премиум → выключен\n' +
     '• Покупки → очищены\n• Промокоды → доступны заново'
   );
+}
+
+// ============================================================
+// /give <user_id> <count> — начислить клики (только админ)
+// ============================================================
+async function handleGive(message, env) {
+  if (message.from.id !== ADMIN_ID) {
+    await sendMessage(env.BOT_TOKEN, message.chat.id, '⛔ Нет доступа');
+    return;
+  }
+
+  const parts = message.text.split(' ');
+  const targetId = parseInt(parts[1], 10);
+  const amount = parseInt(parts[2], 10);
+
+  if (!targetId || isNaN(targetId) || !amount || isNaN(amount)) {
+    await sendMessage(env.BOT_TOKEN, message.chat.id,
+      '❌ Использование: `/give <user_id> <count>`\n\nПример: `/give 5946292761 5000`',
+      'Markdown');
+    return;
+  }
+
+  if (amount === 0) {
+    await sendMessage(env.BOT_TOKEN, message.chat.id, '❌ Количество не может быть 0');
+    return;
+  }
+
+  const row = await env.DB.prepare(
+    'SELECT count FROM counters WHERE chat_id = ?'
+  ).bind(targetId).first();
+
+  if (!row) {
+    await sendMessage(env.BOT_TOKEN, message.chat.id,
+      '❌ Игрок с ID `' + targetId + '` не найден.\nОн должен написать боту `/start`.',
+      'Markdown');
+    return;
+  }
+
+  const newCount = Math.max(0, (row.count ?? 0) + amount);
+
+  await env.DB.prepare(
+    'UPDATE counters SET count = ? WHERE chat_id = ?'
+  ).bind(newCount, targetId).run();
+
+  await sendMessage(env.BOT_TOKEN, message.chat.id,
+    '✅ Начислено *' + amount.toLocaleString('ru-RU') + '* ' + COIN_EMOJI + '\n' +
+    'Игрок: `' + targetId + '`\n' +
+    'Новый счёт: *' + newCount.toLocaleString('ru-RU') + '* ' + COIN_EMOJI,
+    'Markdown');
+
+  try {
+    await sendMessage(env.BOT_TOKEN, targetId,
+      '🎁 Тебе начислено *' + amount.toLocaleString('ru-RU') + '* ' + COIN_EMOJI + '!\n' +
+      'Текущий счёт: *' + newCount.toLocaleString('ru-RU') + '* ' + COIN_EMOJI,
+      'Markdown');
+  } catch (e) {
+    console.error('Не удалось уведомить игрока:', e.message);
+  }
+}
+
+// ============================================================
+// /createpromo <code> <reward> [max_uses] — создать промокод
+// ============================================================
+async function handleCreatePromo(message, env) {
+  if (message.from.id !== ADMIN_ID) {
+    await sendMessage(env.BOT_TOKEN, message.chat.id, '⛔ Нет доступа');
+    return;
+  }
+
+  const parts = message.text.split(' ');
+  const code = (parts[1] || '').trim().toUpperCase();
+  const reward = parseInt(parts[2], 10);
+  const maxUses = parts[3] ? parseInt(parts[3], 10) : null;
+
+  if (!code || !reward || isNaN(reward)) {
+    await sendMessage(env.BOT_TOKEN, message.chat.id,
+      '❌ Использование: `/createpromo <код> <награда> [макс_использований]`\n\n' +
+      'Примеры:\n' +
+      '`/createpromo SUMMER 5000` — без ограничений\n' +
+      '`/createpromo BONUS 1000 10` — 10 использований',
+      'Markdown');
+    return;
+  }
+
+  if (reward <= 0) {
+    await sendMessage(env.BOT_TOKEN, message.chat.id, '❌ Награда должна быть больше 0');
+    return;
+  }
+
+  const existing = await env.DB.prepare(
+    'SELECT id FROM promos WHERE code = ?'
+  ).bind(code).first();
+
+  if (existing) {
+    await sendMessage(env.BOT_TOKEN, message.chat.id,
+      '❌ Промокод `' + code + '` уже существует',
+      'Markdown');
+    return;
+  }
+
+  await env.DB.prepare(
+    `INSERT INTO promos (code, reward, max_uses, uses, created_at)
+     VALUES (?, ?, ?, 0, ?)`
+  ).bind(code, reward, maxUses, Date.now()).run();
+
+  let text = '✅ Промокод создан!\n\n' +
+    'Код: `' + code + '`\n' +
+    'Награда: *' + reward.toLocaleString('ru-RU') + '* ' + COIN_EMOJI + '\n';
+
+  if (maxUses) {
+    text += 'Лимит: *' + maxUses + '* использований';
+  } else {
+    text += 'Лимит: *без ограничений*';
+  }
+
+  await sendMessage(env.BOT_TOKEN, message.chat.id, text, 'Markdown');
 }
 
 // ============================================================
@@ -188,13 +307,28 @@ async function handleApi(request, env, path, corsHeaders) {
   // /api/me
   if (path === '/api/me' && request.method === 'GET') {
     const row = await env.DB.prepare(
-      'SELECT count, color, skin, is_premium FROM counters WHERE chat_id = ?'
+      'SELECT count, color, skin, is_premium, reset_at FROM counters WHERE chat_id = ?'
     ).bind(userId).first();
+
+    const now = Date.now();
+    const activeMultipliers = await env.DB.prepare(
+      `SELECT item_id, expires_at FROM purchases
+       WHERE chat_id = ? AND expires_at IS NOT NULL AND expires_at > ?`
+    ).bind(userId, now).all();
+
+    let multiplier = 1;
+    activeMultipliers.results.forEach(p => {
+      if (p.item_id === 'multiplier2') multiplier = Math.max(multiplier, 2);
+      else if (p.item_id === 'multiplier5') multiplier = Math.max(multiplier, 5);
+    });
+
     return json({
       count: row?.count ?? 0,
       color: row?.color || 'default',
       skin: row?.skin || 'default',
       isPremium: (row?.is_premium ?? 0) === 1,
+      multiplier: multiplier,
+      resetAt: row?.reset_at || 0,
       coinEmoji: COIN_EMOJI,
     }, 200, corsHeaders);
   }
@@ -300,7 +434,7 @@ async function handleApi(request, env, path, corsHeaders) {
     return json({ ok: true, newCount, skin }, 200, corsHeaders);
   }
 
-  // ===== ИНВЕНТАРЬ — АКТИВАЦИЯ СКИНА =====
+  // ===== АКТИВАЦИЯ СКИНА =====
   if (path === '/api/inventory/activate/skin' && request.method === 'POST') {
     let body; try { body = await request.json(); } catch { return json({ error: 'invalid body' }, 400, corsHeaders); }
     const skin = SKINS[body.skinId];
@@ -324,7 +458,7 @@ async function handleApi(request, env, path, corsHeaders) {
     return json({ ok: true, skin }, 200, corsHeaders);
   }
 
-  // ===== ИНВЕНТАРЬ — АКТИВАЦИЯ ЦВЕТА =====
+  // ===== АКТИВАЦИЯ ЦВЕТА =====
   if (path === '/api/inventory/activate/color' && request.method === 'POST') {
     let body; try { body = await request.json(); } catch { return json({ error: 'invalid body' }, 400, corsHeaders); }
     const color = COLORS[body.colorId];
@@ -341,7 +475,6 @@ async function handleApi(request, env, path, corsHeaders) {
 
   // ===== ИНВЕНТАРЬ =====
   if (path === '/api/inventory' && request.method === 'GET') {
-    // Автоочистка истёкших бонусов
     await env.DB.prepare(
       `DELETE FROM purchases
        WHERE chat_id = ?
@@ -481,22 +614,51 @@ async function handleApi(request, env, path, corsHeaders) {
 
   // ===== ПРОМОКОД =====
   if (path === '/api/promo' && request.method === 'POST') {
-    let body; try { body = await request.json(); } catch { return json({ error: 'invalid body' }, 400, corsHeaders); }
+    let body;
+    try { body = await request.json(); } catch {
+      return json({ error: 'invalid body' }, 400, corsHeaders);
+    }
     const code = (body.code || '').trim().toUpperCase();
     if (!code) return json({ error: 'empty_code', message: 'Введи промокод' }, 400, corsHeaders);
-    const promo = PROMOS[code];
-    if (!promo) return json({ error: 'invalid_code', message: 'Промокод не существует' }, 404, corsHeaders);
+
+    let promo = BASE_PROMOS[code];
+    let promoId = null;
+
+    if (!promo) {
+      const dbPromo = await env.DB.prepare(
+        'SELECT id, reward, max_uses, uses FROM promos WHERE code = ?'
+      ).bind(code).first();
+
+      if (!dbPromo) {
+        return json({ error: 'invalid_code', message: 'Промокод не существует' }, 404, corsHeaders);
+      }
+
+      if (dbPromo.max_uses !== null && dbPromo.uses >= dbPromo.max_uses) {
+        return json({ error: 'limit_reached', message: 'Лимит использований исчерпан' }, 400, corsHeaders);
+      }
+
+      promo = { code: code, reward: dbPromo.reward };
+      promoId = dbPromo.id;
+    }
+
     const used = await env.DB.prepare(
       'SELECT id FROM used_promos WHERE chat_id = ? AND promo_code = ?'
     ).bind(userId, code).first();
     if (used) return json({ error: 'already_used', message: 'Ты уже использовал этот промокод' }, 400, corsHeaders);
+
     const row = await env.DB.prepare('SELECT count FROM counters WHERE chat_id = ?').bind(userId).first();
     const cur = row?.count ?? 0;
     const newCount = cur + promo.reward;
+
     await env.DB.prepare('UPDATE counters SET count = ? WHERE chat_id = ?').bind(newCount, userId).run();
     await env.DB.prepare(
       `INSERT INTO used_promos (chat_id, promo_code, used_at) VALUES (?, ?, ?)`
     ).bind(userId, code, Date.now()).run();
+
+    if (promoId) {
+      await env.DB.prepare('UPDATE promos SET uses = uses + 1 WHERE id = ?').bind(promoId).run();
+    }
+
     return json({ ok: true, reward: promo.reward, newCount }, 200, corsHeaders);
   }
 
@@ -513,11 +675,14 @@ function json(data, status, corsHeaders) {
   });
 }
 
-async function sendMessage(token, chatId, text, keyboard) {
+async function sendMessage(token, chatId, text, parseMode, keyboard) {
+  const body = { chat_id: chatId, text };
+  if (parseMode) body.parse_mode = parseMode;
+  if (keyboard) body.reply_markup = keyboard;
   return fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'Markdown', reply_markup: keyboard })
+    body: JSON.stringify(body)
   });
 }
 
