@@ -4,7 +4,7 @@
 
 const ADMIN_ID = 5946292761;
 const COIN_EMOJI = '🪙';
-const WEBAPP_URL = 'https://mark213364.github.io/main/index.html';
+const WEBAPP_URL = 'https://mark213364.github.io/main/release/index.html';
 
 // ============================================================
 // ЦВЕТА
