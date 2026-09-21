@@ -503,19 +503,11 @@
     <span class="toast-text" id="toastText"></span>
   </div>
     <script>
-    // ============================================================
-    // ⚙️ ЧАСТЬ 1: ЧТО МЕНЯЕШЬ ЧАСТО
-    // ============================================================
-
     const API_URL = 'https://broad-boat-0443.g3316464.workers.dev';
     const DONATE_URL = 'https://t.me/Kwbejdif';
     const CHANNEL_URL = 'https://t.me/твой_канал';
     const COIN = '🪙';
     const TOAST_DURATION = 2500;
-
-    // ============================================================
-    // ⚙️ ЧАСТЬ 2: ЛОГИКА
-    // ============================================================
 
     const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
     if (tg) { tg.ready(); tg.expand(); }
@@ -775,7 +767,9 @@
     async function loadCustomization() { await loadSkins(); await loadColors(); }
 
     async function loadSkins() {
-      skinsList.innerHTML = '<div class="loading">Загрузка...</div>';
+      if (!skinsList.querySelector('.shop-item')) {
+        skinsList.innerHTML = '<div class="loading">Загрузка...</div>';
+      }
       try {
         const res = await fetch(API_URL + '/api/skins', { headers: { 'X-Init-Data': tg ? tg.initData : '' } });
         const data = await res.json();
@@ -823,13 +817,24 @@
           counterEl.textContent = formatNumber(count);
           showToast('✅', data.skin.name + ' куплен! Активируй в инвентаре');
           if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-          loadSkins();
+
+          // Обновляем только одну карточку — без перерисовки всего списка
+          const buyBtn = document.querySelector('[data-skin="' + skinId + '"]');
+          if (buyBtn) {
+            const card = buyBtn.closest('.shop-item');
+            buyBtn.textContent = '✅ Куплено';
+            buyBtn.disabled = true;
+            const priceEl = card.querySelector('.shop-item-price');
+            if (priceEl) priceEl.remove();
+          }
         }
       } catch (e) { console.error('Buy skin error:', e); }
     }
 
     async function loadColors() {
-      colorsList.innerHTML = '<div class="loading">Загрузка...</div>';
+      if (!colorsList.querySelector('.shop-item')) {
+        colorsList.innerHTML = '<div class="loading">Загрузка...</div>';
+      }
       try {
         const res = await fetch(API_URL + '/api/colors', { headers: { 'X-Init-Data': tg ? tg.initData : '' } });
         const data = await res.json();
@@ -872,7 +877,16 @@
           counterEl.textContent = formatNumber(count);
           showToast('🎨', data.color.name + ' куплен! Активируй в инвентаре');
           if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-          loadColors();
+
+          // Обновляем только одну карточку
+          const buyBtn = document.querySelector('[data-color="' + colorId + '"]');
+          if (buyBtn) {
+            const card = buyBtn.closest('.shop-item');
+            buyBtn.textContent = '✅ Куплено';
+            buyBtn.disabled = true;
+            const priceEl = card.querySelector('.shop-item-price');
+            if (priceEl) priceEl.remove();
+          }
         }
       } catch (e) { console.error('Buy color error:', e); }
     }
@@ -1071,14 +1085,10 @@
       } catch (e) { console.error('Activate error:', e); }
     }
 
-    // ============================================================
-    // ЛЁГКИЙ ТАЙМЕР (без запросов)
-    // ============================================================
-
+    // ЛЁГКИЙ ТАЙМЕР
     setInterval(() => {
       const now = Date.now();
 
-      // КД в бонусах
       document.querySelectorAll('#bonusesList [data-cooldown]').forEach(b => {
         const until = parseInt(b.dataset.cooldown, 10);
         const remaining = until - now;
@@ -1091,7 +1101,6 @@
         }
       });
 
-      // Активные бонусы в бонусах
       document.querySelectorAll('#bonusesList [data-active-until]').forEach(b => {
         const until = parseInt(b.dataset.activeUntil, 10);
         const remaining = until - now;
@@ -1100,7 +1109,6 @@
         }
       });
 
-      // Истёкшие бонусы в инвентаре — удаляем карточку
       document.querySelectorAll('#inventoryList [data-inv-active]').forEach(b => {
         const until = parseInt(b.dataset.invActive, 10);
         const remaining = until - now;
@@ -1116,10 +1124,6 @@
         }
       });
     }, 500);
-
-    // ============================================================
-    // ПРОМОКОД
-    // ============================================================
 
     const promoBtn = document.getElementById('promoBtn');
     const promoInput = document.getElementById('promoInput');
@@ -1150,10 +1154,6 @@
       } catch (e) { showToast('❌', 'Ошибка сети'); }
       finally { promoBtn.disabled = false; promoBtn.textContent = 'Активировать'; }
     }
-
-    // ============================================================
-    // НИЖНЯЯ НАВИГАЦИЯ
-    // ============================================================
 
     document.getElementById('donateBtn').addEventListener('click', () => {
       if (tg && tg.openTelegramLink) tg.openTelegramLink(DONATE_URL);
