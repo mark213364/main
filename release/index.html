@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>BasicClickBot</title>
+  <title>TapllyBot</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -968,7 +968,15 @@
             startMultiplierTimer(data.expiresAt);
           }
           if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-          loadBonuses();
+
+          const buyBtn = document.querySelector('[data-bonus="' + bonusId + '"]');
+          if (buyBtn) {
+            buyBtn.textContent = '✅ Активен';
+            buyBtn.disabled = true;
+            if (data.expiresAt) {
+              buyBtn.setAttribute('data-active-until', data.expiresAt);
+            }
+          }
         }
       } catch (e) { console.error('Buy bonus error:', e); }
     }
@@ -999,7 +1007,9 @@
     }
 
     async function loadInventory() {
-      inventoryList.innerHTML = '<div class="loading">Загрузка...</div>';
+      if (!inventoryList.querySelector('.shop-item')) {
+        inventoryList.innerHTML = '<div class="loading">Загрузка...</div>';
+      }
       try {
         const res = await fetch(API_URL + '/api/inventory', { headers: { 'X-Init-Data': tg ? tg.initData : '' } });
         const data = await res.json();
@@ -1077,7 +1087,23 @@
             applySkin(data.skin.id, data.skin.icon);
             showToast('🎨', data.skin.name + ' применён');
             if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-            loadInventory();
+
+            document.querySelectorAll('#inventoryList [data-inv]').forEach(b => {
+              const bid = b.dataset.inv;
+              const btype = b.dataset.type;
+              if (btype === 'skin') {
+                const sid = bid.replace('skin_', '');
+                if (sid === skinId) {
+                  b.textContent = '✅ Активен';
+                  b.disabled = true;
+                  b.closest('.shop-item').classList.add('shop-item-active');
+                } else {
+                  b.textContent = 'Применить';
+                  b.disabled = false;
+                  b.closest('.shop-item').classList.remove('shop-item-active');
+                }
+              }
+            });
           } else showToast('❌', data.error === 'premium_only' ? 'Только с Премиумом' : 'Ошибка');
         } else if (type === 'color') {
           const colorId = itemId.replace('color_', '');
@@ -1091,7 +1117,23 @@
             applyColor(data.color.id);
             showToast('🎨', data.color.name + ' применён');
             if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-            loadInventory();
+
+            document.querySelectorAll('#inventoryList [data-inv]').forEach(b => {
+              const bid = b.dataset.inv;
+              const btype = b.dataset.type;
+              if (btype === 'color') {
+                const cid = bid.replace('color_', '');
+                if (cid === colorId) {
+                  b.textContent = '✅ Активен';
+                  b.disabled = true;
+                  b.closest('.shop-item').classList.add('shop-item-active');
+                } else {
+                  b.textContent = 'Применить';
+                  b.disabled = false;
+                  b.closest('.shop-item').classList.remove('shop-item-active');
+                }
+              }
+            });
           } else showToast('❌', 'Ошибка');
         }
       } catch (e) { console.error('Activate error:', e); }
@@ -1137,12 +1179,12 @@
       });
     }, 500);
 
-    // АВТООБНОВЛЕНИЕ — раз в 2 секунды, тихо
+    // АВТООБНОВЛЕНИЕ раз в 1 секунду
     setInterval(async () => {
       const shopScreen = document.getElementById('screen-shop');
       const lbScreen = document.getElementById('screen-leaderboard');
 
-      // На кликере — обновляем счёт и множитель
+      // На кликере — обновляем счёт, множитель, тему
       if (!shopScreen.classList.contains('active') && !lbScreen.classList.contains('active')) {
         try {
           const res = await fetch(API_URL + '/api/me', {
@@ -1157,14 +1199,23 @@
             currentMultiplier = data.multiplier || 1;
             updateMultiplierBadge();
           }
+          // Сброс темы, если админ сделал /wipe
+          if (data.color !== activeColor) {
+            applyColor(data.color);
+          }
+          if (data.skin !== activeSkin) {
+            const skins = window._skinsCache || {};
+            const skinData = skins[data.skin];
+            applySkin(data.skin, skinData ? skinData.icon : null);
+          }
         } catch (e) {}
       }
 
-      // На рейтинге — тихо обновляем список
+      // На рейтинге — тихо обновляем
       if (lbScreen.classList.contains('active')) {
         loadLeaderboard();
       }
-    }, 2000);
+    }, 1000);
 
     // ПРОМОКОД
     const promoBtn = document.getElementById('promoBtn');
@@ -1209,7 +1260,7 @@
       if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     });
     document.getElementById('infoBtn').addEventListener('click', () => {
-      showToast('ℹ️', 'BasicClickBot v2.0');
+      showToast('ℹ️', 'TapllyBot v2.0');
       if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     });
 
