@@ -502,8 +502,10 @@
     <span class="toast-icon" id="toastIcon">🎉</span>
     <span class="toast-text" id="toastText"></span>
   </div>
-    <script>
-    const API_URL = 'https://broad-boat-0443.g3316464.workers.dev';
+
+  <script>
+    // ⚙️ НАСТРОЙКИ
+    const API_URL = 'https://basicclickbot.g3316464.workers.dev';
     const DONATE_URL = 'https://t.me/Kwbejdif';
     const CHANNEL_URL = 'https://t.me/твой_канал';
     const COIN = '🪙';
@@ -637,10 +639,7 @@
           const skinData = skins[data.skin];
           applySkin(data.skin, skinData ? skinData.icon : null);
         }
-        const bonusRes = await fetch(API_URL + '/api/bonuses', { headers: { 'X-Init-Data': tg ? tg.initData : '' } });
-        const bonusData = await bonusRes.json();
-        currentMultiplier = bonusData.multiplier || 1;
-        if (bonusData.activeUntil && bonusData.activeUntil > Date.now()) startMultiplierTimer(bonusData.activeUntil);
+        currentMultiplier = data.multiplier || 1;
         updateMultiplierBadge();
       } catch (e) { console.error('Load error:', e); }
     }
@@ -739,29 +738,45 @@
     });
 
     async function loadLeaderboard() {
-      leaderboardList.innerHTML = '<div class="loading">Загрузка...</div>';
+      if (!leaderboardList.querySelector('.leaderboard-item') && !leaderboardList.querySelector('.empty')) {
+        leaderboardList.innerHTML = '<div class="loading">Загрузка...</div>';
+      }
       try {
         const res = await fetch(API_URL + '/api/top', { headers: { 'X-Init-Data': tg ? tg.initData : '' } });
         const data = await res.json();
-        if (!data.players || data.players.length === 0) { leaderboardList.innerHTML = '<div class="empty">Пока никого нет 😢</div>'; return; }
-        const myId = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : null;
-        const medals = ['🥇', '🥈', '🥉'];
-        let html = '';
-        data.players.forEach((p, i) => {
-          let rankClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
-          const isMe = p.user_id === myId ? 'me' : '';
-          const rankDisplay = i < 3 ? medals[i] : String(i + 1);
-          const rawName = p.display_name || 'Игрок';
-          let name = escapeHtml(rawName.charAt(0) === '@' ? rawName : '@' + rawName);
-          if (p.is_premium) name += ' 💎';
-          html += '<div class="leaderboard-item ' + isMe + '">';
-          html += '<div class="rank ' + rankClass + '">' + rankDisplay + '</div>';
-          html += '<div class="player-name">' + name + '</div>';
-          html += '<div class="player-score">' + formatNumber(p.count) + ' ' + COIN + '</div>';
-          html += '</div>';
-        });
-        leaderboardList.innerHTML = html;
-      } catch (e) { leaderboardList.innerHTML = '<div class="empty">Ошибка загрузки 😢</div>'; }
+        const newHtml = buildLeaderboardHtml(data);
+        if (newHtml !== leaderboardList.dataset.cachedHtml) {
+          leaderboardList.innerHTML = newHtml;
+          leaderboardList.dataset.cachedHtml = newHtml;
+        }
+      } catch (e) {
+        if (!leaderboardList.querySelector('.leaderboard-item')) {
+          leaderboardList.innerHTML = '<div class="empty">Ошибка загрузки 😢</div>';
+        }
+      }
+    }
+
+    function buildLeaderboardHtml(data) {
+      if (!data.players || data.players.length === 0) {
+        return '<div class="empty">Пока никого нет 😢</div>';
+      }
+      const myId = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : null;
+      const medals = ['🥇', '🥈', '🥉'];
+      let html = '';
+      data.players.forEach((p, i) => {
+        let rankClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
+        const isMe = p.user_id === myId ? 'me' : '';
+        const rankDisplay = i < 3 ? medals[i] : String(i + 1);
+        const rawName = p.display_name || 'Игрок';
+        let name = escapeHtml(rawName.charAt(0) === '@' ? rawName : '@' + rawName);
+        if (p.is_premium) name += ' 💎';
+        html += '<div class="leaderboard-item ' + isMe + '">';
+        html += '<div class="rank ' + rankClass + '">' + rankDisplay + '</div>';
+        html += '<div class="player-name">' + name + '</div>';
+        html += '<div class="player-score">' + formatNumber(p.count) + ' ' + COIN + '</div>';
+        html += '</div>';
+      });
+      return html;
     }
 
     async function loadCustomization() { await loadSkins(); await loadColors(); }
@@ -817,8 +832,6 @@
           counterEl.textContent = formatNumber(count);
           showToast('✅', data.skin.name + ' куплен! Активируй в инвентаре');
           if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-
-          // Обновляем только одну карточку — без перерисовки всего списка
           const buyBtn = document.querySelector('[data-skin="' + skinId + '"]');
           if (buyBtn) {
             const card = buyBtn.closest('.shop-item');
@@ -877,8 +890,6 @@
           counterEl.textContent = formatNumber(count);
           showToast('🎨', data.color.name + ' куплен! Активируй в инвентаре');
           if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-
-          // Обновляем только одну карточку
           const buyBtn = document.querySelector('[data-color="' + colorId + '"]');
           if (buyBtn) {
             const card = buyBtn.closest('.shop-item');
@@ -892,7 +903,9 @@
     }
 
     async function loadBonuses() {
-      bonusesList.innerHTML = '<div class="loading">Загрузка...</div>';
+      if (!bonusesList.querySelector('.shop-item')) {
+        bonusesList.innerHTML = '<div class="loading">Загрузка...</div>';
+      }
       try {
         const res = await fetch(API_URL + '/api/bonuses', { headers: { 'X-Init-Data': tg ? tg.initData : '' } });
         const data = await res.json();
@@ -902,7 +915,6 @@
           const isActive = b.active ? 'shop-item-active' : '';
           let btnText, btnDisabled;
           let extraAttrs = '';
-
           if (b.active) {
             btnText = '✅ Активен';
             btnDisabled = true;
@@ -915,7 +927,6 @@
             btnText = 'Купить';
             btnDisabled = false;
           }
-
           html += '<div class="shop-item ' + isActive + '">';
           html += '<div class="shop-item-icon">' + b.icon + '</div>';
           html += '<div class="shop-item-info"><div class="shop-item-name">' + escapeHtml(b.name) + '</div>';
@@ -986,7 +997,8 @@
       if (remaining && remaining > 0) text += ' · ' + Math.ceil(remaining / 1000) + 'с';
       badge.textContent = text;
     }
-          async function loadInventory() {
+
+    async function loadInventory() {
       inventoryList.innerHTML = '<div class="loading">Загрузка...</div>';
       try {
         const res = await fetch(API_URL + '/api/inventory', { headers: { 'X-Init-Data': tg ? tg.initData : '' } });
@@ -1085,7 +1097,7 @@
       } catch (e) { console.error('Activate error:', e); }
     }
 
-    // ЛЁГКИЙ ТАЙМЕР
+    // ЛЁГКИЙ ТАЙМЕР (без запросов)
     setInterval(() => {
       const now = Date.now();
 
@@ -1125,6 +1137,36 @@
       });
     }, 500);
 
+    // АВТООБНОВЛЕНИЕ — раз в 2 секунды, тихо
+    setInterval(async () => {
+      const shopScreen = document.getElementById('screen-shop');
+      const lbScreen = document.getElementById('screen-leaderboard');
+
+      // На кликере — обновляем счёт и множитель
+      if (!shopScreen.classList.contains('active') && !lbScreen.classList.contains('active')) {
+        try {
+          const res = await fetch(API_URL + '/api/me', {
+            headers: { 'X-Init-Data': tg ? tg.initData : '' }
+          });
+          const data = await res.json();
+          if (data.count !== count) {
+            count = data.count;
+            counterEl.textContent = formatNumber(count);
+          }
+          if (data.multiplier !== undefined) {
+            currentMultiplier = data.multiplier || 1;
+            updateMultiplierBadge();
+          }
+        } catch (e) {}
+      }
+
+      // На рейтинге — тихо обновляем список
+      if (lbScreen.classList.contains('active')) {
+        loadLeaderboard();
+      }
+    }, 2000);
+
+    // ПРОМОКОД
     const promoBtn = document.getElementById('promoBtn');
     const promoInput = document.getElementById('promoInput');
     if (promoBtn) {
