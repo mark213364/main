@@ -54,12 +54,12 @@ const BONUSES = {
   },
   multiplier5: {
     id: 'multiplier5', name: 'x5 кликов', icon: '🔥',
-    desc: 'Пятикратные клики на 3 минуты', price: 3200,
+    desc: 'Пятикратные клики на 3 минуты', price: 3000,
     duration: 3 * 60 * 1000, multiplier: 5,
   },
   premium: {
     id: 'premium', name: 'Премиум', icon: '💎',
-    desc: 'Значок 💎 рядом с ником навсегда', price: 100000,
+    desc: 'Значок 💎 рядом с ником навсегда', price: 50000,
     duration: null, multiplier: 1,
   },
 };
