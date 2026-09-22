@@ -31,7 +31,7 @@ const SKINS = {
   star:    { id: 'star',    name: 'Звезда',   icon: '⭐', price: 1500 },
   fire:    { id: 'fire',    name: 'Огонь',    icon: '🔥', price: 1500 },
   rocket:  { id: 'rocket',  name: 'Ракета',   icon: '🚀', price: 2000 },
-  gem:     { id: 'gem',     name: 'Алмаз',    icon: '💎', price: 3000, premiumOnly: true },
+  gem:     { id: 'gem',     name: 'Алмаз',    icon: '💎', price: 10000, premiumOnly: true },
   crown:   { id: 'crown',   name: 'Корона',   icon: '👑', price: 5000 },
   heart:   { id: 'heart',   name: 'Сердце',   icon: '❤️', price: 1200 },
   bolt:    { id: 'bolt',    name: 'Молния',   icon: '⚡', price: 1800 },
@@ -49,7 +49,7 @@ const BONUS_COOLDOWN = 5 * 60 * 1000;
 const BONUSES = {
   multiplier2: {
     id: 'multiplier2', name: 'x2 кликов', icon: '⚡',
-    desc: 'Удваивает клики на 3 минуты', price: 1200,
+    desc: 'Удваивает клики на 3 минуты', price: 1000,
     duration: 3 * 60 * 1000, multiplier: 2,
   },
   multiplier5: {
@@ -68,7 +68,7 @@ const BONUSES = {
 // БАЗОВЫЕ ПРОМОКОДЫ
 // ============================================================
 const BASE_PROMOS = {
-  'FHTK194QQBRCS143': { code: 'FHTK194QQBRCS143', reward: 10000 },
+  'FHTK194QQBRCS143': { code: 'FHTK194QQBRCS143', reward: 15000 },
 };
 
 // ============================================================
@@ -101,26 +101,15 @@ export default {
       const update = await request.json();
       const message = update.message;
 
-      // Логируем для отладки
       if (message) {
         console.log('MESSAGE:', message.text, 'FROM:', message.from?.id);
       }
 
-      if (message && message.text && message.text.startsWith('/start')) {
-        await handleStart(message, env);
-      }
-      if (message && message.text && message.text.startsWith('/reset ')) {
-        await handleReset(message, env);
-      }
-      if (message && message.text && message.text.startsWith('/wipe')) {
-        await handleWipe(message, env);
-      }
-      if (message && message.text && message.text.startsWith('/give ')) {
-        await handleGive(message, env);
-      }
-      if (message && message.text && message.text.startsWith('/createpromo ')) {
-        await handleCreatePromo(message, env);
-      }
+      if (message && message.text && message.text.startsWith('/start')) await handleStart(message, env);
+      if (message && message.text && message.text.startsWith('/reset ')) await handleReset(message, env);
+      if (message && message.text && message.text.startsWith('/wipe')) await handleWipe(message, env);
+      if (message && message.text && message.text.startsWith('/give ')) await handleGive(message, env);
+      if (message && message.text && message.text.startsWith('/createpromo ')) await handleCreatePromo(message, env);
 
       return new Response('OK', { status: 200 });
     } catch (e) {
@@ -136,10 +125,6 @@ export default {
 
 async function handleStart(message, env) {
   console.log('=== handleStart CALLED ===');
-  console.log('chatId:', message.chat.id);
-  console.log('WEBAPP_URL:', WEBAPP_URL);
-  console.log('BOT_TOKEN exists:', !!env.BOT_TOKEN);
-  console.log('DB exists:', !!env.DB);
 
   try {
     const chatId = message.chat.id;
@@ -147,7 +132,6 @@ async function handleStart(message, env) {
       .filter(Boolean).join(' ') || 'Игрок';
     const username = message.from.username || null;
 
-    // Создаём или обновляем игрока
     await env.DB.prepare(
       `INSERT INTO counters (chat_id, name, username, count)
        VALUES (?, ?, ?, 0)
@@ -156,15 +140,11 @@ async function handleStart(message, env) {
          username = excluded.username`
     ).bind(chatId, name, username).run();
 
-    console.log('DB insert OK');
-
     const result = await env.DB.prepare(
       'SELECT count FROM counters WHERE chat_id = ?'
     ).bind(chatId).first();
 
-    console.log('DB select OK, count:', result?.count);
-
-    const sendResult = await sendMessage(env.BOT_TOKEN, chatId,
+    await sendMessage(env.BOT_TOKEN, chatId,
       `👋 Привет, ${name}!\nТекущий счёт: *${result?.count ?? 0}* ${COIN_EMOJI}\n\nОткрой приложение 👇`,
       'Markdown',
       {
@@ -173,13 +153,6 @@ async function handleStart(message, env) {
         ]]
       }
     );
-
-    const sendData = await sendResult.json();
-    console.log('SEND RESULT:', JSON.stringify(sendData));
-
-    if (!sendData.ok) {
-      console.error('sendMessage FAILED:', sendData.description);
-    }
   } catch (e) {
     console.error('handleStart error:', e.message, e.stack);
   }
@@ -221,12 +194,7 @@ async function handleWipe(message, env) {
   );
 }
 
-// ============================================================
-// /give <user_id> <count>
-// ============================================================
 async function handleGive(message, env) {
-  console.log('=== handleGive CALLED ===', message.text);
-
   if (message.from.id !== ADMIN_ID) {
     await sendMessage(env.BOT_TOKEN, message.chat.id, '⛔ Нет доступа');
     return;
@@ -259,7 +227,7 @@ async function handleGive(message, env) {
   await env.DB.prepare(
     'UPDATE counters SET count = ?, reset_at = ? WHERE chat_id = ?'
   ).bind(newCount, Date.now(), targetId).run();
-  
+
   await sendMessage(env.BOT_TOKEN, message.chat.id,
     '✅ Начислено *' + amount.toLocaleString('ru-RU') + '* ' + COIN_EMOJI + '\n' +
     'Игрок: `' + targetId + '`\n' +
@@ -276,9 +244,6 @@ async function handleGive(message, env) {
   }
 }
 
-// ============================================================
-// /createpromo <code> <reward> [max_uses]
-// ============================================================
 async function handleCreatePromo(message, env) {
   if (message.from.id !== ADMIN_ID) {
     await sendMessage(env.BOT_TOKEN, message.chat.id, '⛔ Нет доступа');
@@ -527,6 +492,21 @@ async function handleApi(request, env, path, corsHeaders) {
        WHERE chat_id = ? ORDER BY created_at DESC`
     ).bind(userId).all();
 
+    // Проверяем премиум — для выдачи скина gem
+    const userRow = await env.DB.prepare(
+      'SELECT is_premium FROM counters WHERE chat_id = ?'
+    ).bind(userId).first();
+    const isPremium = (userRow?.is_premium ?? 0) === 1;
+
+    const hasGem = purchases.results.some(p => p.item_id === 'skin_gem');
+    if (isPremium && !hasGem) {
+      purchases.results.push({
+        item_id: 'skin_gem',
+        expires_at: null,
+        created_at: Date.now(),
+      });
+    }
+
     const items = purchases.results.map(p => {
       const id = p.item_id;
       let type = 'unknown', name = id, icon = '❓';
@@ -719,13 +699,11 @@ async function sendMessage(token, chatId, text, parseMode, keyboard) {
   if (parseMode) body.parse_mode = parseMode;
   if (keyboard) body.reply_markup = keyboard;
 
-  const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+  return fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   });
-
-  return res;
 }
 
 async function verifyInitData(initData, botToken) {
