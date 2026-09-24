@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>BasicClickBot</title>
+  <title>Telegram Clicker</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -59,8 +59,10 @@
       position: relative;
       display: flex; align-items: center; justify-content: center;
       gap: 3px; white-space: nowrap;
-      transition: color 0.2s ease;
+      transition: color 0.2s ease, transform 0.15s ease;
     }
+
+    .tab:active { transform: scale(0.95); }
 
     .tab.active { color: var(--tg-theme-text-color, #000000); }
 
@@ -70,6 +72,12 @@
       height: 3px;
       background: var(--btn-gradient);
       border-radius: 3px 3px 0 0;
+      animation: tabSlideIn 0.25s ease;
+    }
+
+    @keyframes tabSlideIn {
+      from { transform: scaleX(0); opacity: 0; }
+      to   { transform: scaleX(1); opacity: 1; }
     }
 
     .screen {
@@ -80,7 +88,22 @@
       overflow-y: auto;
     }
 
-    .screen.active { display: block; }
+    .screen.active {
+      display: block;
+      animation: screenFadeIn 0.3s ease;
+    }
+
+    @keyframes screenFadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .shop-content { animation: subTabFadeIn 0.25s ease; }
+
+    @keyframes subTabFadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
 
     #screen-clicker .container {
       display: grid;
@@ -103,13 +126,13 @@
 
     .btn {
       grid-row: 2;
-      width: 200px; height: 200px;
+      width: 300px; height: 300px;
       border-radius: 50%; border: none;
       background: var(--btn-gradient);
       color: var(--btn-text-color);
-      font-size: 22px; font-weight: 600;
+      font-size: 28px; font-weight: 600;
       cursor: pointer;
-      box-shadow: 0 10px 40px var(--btn-shadow);
+      box-shadow: 0 15px 50px var(--btn-shadow);
       transition: transform 0.1s ease;
       display: flex; align-items: center; justify-content: center;
       font-family: inherit;
@@ -120,7 +143,7 @@
 
     .btn .btn-skin-emoji {
       position: absolute;
-      font-size: 90px;
+      font-size: 135px;
       line-height: 1;
       pointer-events: none;
       user-select: none;
@@ -162,6 +185,23 @@
       background: var(--tg-theme-secondary-bg-color, #f0f0f0);
       border: 1px solid var(--accent-color-border);
       border-radius: 14px;
+      animation: listItemIn 0.3s ease backwards;
+    }
+
+    .leaderboard-item:nth-child(1) { animation-delay: 0.02s; }
+    .leaderboard-item:nth-child(2) { animation-delay: 0.04s; }
+    .leaderboard-item:nth-child(3) { animation-delay: 0.06s; }
+    .leaderboard-item:nth-child(4) { animation-delay: 0.08s; }
+    .leaderboard-item:nth-child(5) { animation-delay: 0.10s; }
+    .leaderboard-item:nth-child(6) { animation-delay: 0.12s; }
+    .leaderboard-item:nth-child(7) { animation-delay: 0.14s; }
+    .leaderboard-item:nth-child(8) { animation-delay: 0.16s; }
+    .leaderboard-item:nth-child(9) { animation-delay: 0.18s; }
+    .leaderboard-item:nth-child(10) { animation-delay: 0.20s; }
+
+    @keyframes listItemIn {
+      from { opacity: 0; transform: translateX(-8px); }
+      to   { opacity: 1; transform: translateX(0); }
     }
 
     .leaderboard-item.me {
@@ -213,13 +253,22 @@
       font-size: 12px; font-weight: 600;
       font-family: inherit; cursor: pointer;
       border-radius: 10px;
-      transition: color 0.2s ease, background 0.2s ease;
+      transition: color 0.2s ease, background 0.2s ease, transform 0.15s ease;
       white-space: nowrap;
     }
+
+    .shop-subtab:active { transform: scale(0.96); }
 
     .shop-subtab.active {
       color: var(--btn-text-color);
       background: var(--btn-gradient);
+      animation: subTabPop 0.25s ease;
+    }
+
+    @keyframes subTabPop {
+      0%   { transform: scale(0.9); }
+      50%  { transform: scale(1.05); }
+      100% { transform: scale(1); }
     }
 
     .shop-section-title {
@@ -248,6 +297,19 @@
       transition: transform 0.15s ease;
       gap: 6px;
       min-width: 0;
+      animation: cardIn 0.3s ease backwards;
+    }
+
+    .shop-item:nth-child(1) { animation-delay: 0.02s; }
+    .shop-item:nth-child(2) { animation-delay: 0.04s; }
+    .shop-item:nth-child(3) { animation-delay: 0.06s; }
+    .shop-item:nth-child(4) { animation-delay: 0.08s; }
+    .shop-item:nth-child(5) { animation-delay: 0.10s; }
+    .shop-item:nth-child(6) { animation-delay: 0.12s; }
+
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(10px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
     }
 
     .shop-item:active { transform: scale(0.97); }
@@ -403,10 +465,13 @@
       cursor: pointer;
       padding: 8px 12px;
       border-radius: 12px;
-      transition: color 0.2s ease;
+      transition: color 0.2s ease, transform 0.15s ease;
     }
 
-    .nav-btn:active { color: var(--accent-color); }
+    .nav-btn:active {
+      color: var(--accent-color);
+      transform: scale(0.92);
+    }
     .nav-btn .icon { font-size: 22px; line-height: 1; }
 
     .toast {
@@ -505,18 +570,13 @@
 
   <script>
     // ============================================================
-    // ⚙️ ЧАСТЬ 1: ЧТО МЕНЯЕШЬ ЧАСТО
+    // ⚙️ НАСТРОЙКИ — замени под свой проект
     // ============================================================
-
     const API_URL = 'https://basicclickbot.g3316464.workers.dev';
-    const DONATE_URL = 'https://t.me/Kwbejdif';
-    const CHANNEL_URL = 'https://t.me/твой_канал';
+    const DONATE_URL = 'https://t.me/your_username';
+    const CHANNEL_URL = 'https://t.me/your_channel';
     const COIN = '🪙';
     const TOAST_DURATION = 2500;
-
-    // ============================================================
-    // ⚙️ ЧАСТЬ 2: ЛОГИКА
-    // ============================================================
 
     const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
     if (tg) { tg.ready(); tg.expand(); }
@@ -539,6 +599,7 @@
     let activeColor = 'default';
     let activeSkin = 'default';
     let toastTimer = null;
+    let lastResetAt = 0;
 
     function showToast(icon, text) {
       const toast = document.getElementById('toast');
@@ -570,10 +631,6 @@
       if (h.length !== 6) return null;
       return { r: parseInt(h.slice(0, 2), 16), g: parseInt(h.slice(2, 4), 16), b: parseInt(h.slice(4, 6), 16) };
     }
-
-    // ============================================================
-    // ЦВЕТА И СКИНЫ
-    // ============================================================
 
     function applyColor(colorId) {
       activeColor = colorId || 'default';
@@ -615,7 +672,7 @@
       root.style.setProperty('--panel-border', 'rgba(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ', 0.3)');
       document.body.style.background = 'linear-gradient(135deg, ' + hex + '33 0%, ' + hex + '11 100%)';
       btn.style.background = hex;
-      btn.style.boxShadow = '0 10px 40px rgba(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ', 0.5)';
+      btn.style.boxShadow = '0 15px 50px rgba(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ', 0.5)';
     }
 
     function applySkin(skinId, skinIcon) {
@@ -636,16 +693,13 @@
       btn.appendChild(emoji);
     }
 
-    // ============================================================
-    // ЗАГРУЗКА
-    // ============================================================
-
     async function loadCount() {
       try {
         const res = await fetch(API_URL + '/api/me', { headers: { 'X-Init-Data': tg ? tg.initData : '' } });
         const data = await res.json();
         count = data.count || 0;
         counterEl.textContent = formatNumber(count);
+        lastResetAt = data.resetAt || 0;
         await loadColorsSilent();
         await loadSkinsSilent();
         if (data.color) applyColor(data.color);
@@ -654,10 +708,7 @@
           const skinData = skins[data.skin];
           applySkin(data.skin, skinData ? skinData.icon : null);
         }
-        const bonusRes = await fetch(API_URL + '/api/bonuses', { headers: { 'X-Init-Data': tg ? tg.initData : '' } });
-        const bonusData = await bonusRes.json();
-        currentMultiplier = bonusData.multiplier || 1;
-        if (bonusData.activeUntil && bonusData.activeUntil > Date.now()) startMultiplierTimer(bonusData.activeUntil);
+        currentMultiplier = data.multiplier || 1;
         updateMultiplierBadge();
       } catch (e) { console.error('Load error:', e); }
     }
@@ -716,10 +767,6 @@
     }
     animate();
 
-    // ============================================================
-    // КЛИК
-    // ============================================================
-
     btn.addEventListener('click', () => {
       count += currentMultiplier;
       counterEl.textContent = formatNumber(count);
@@ -730,10 +777,6 @@
       if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
       saveCount();
     });
-
-    // ============================================================
-    // ВКЛАДКИ
-    // ============================================================
 
     document.querySelectorAll('.tab').forEach(tab => {
       tab.addEventListener('click', () => {
@@ -763,44 +806,54 @@
       });
     });
 
-    // ============================================================
-    // ЛИДЕРБОРД
-    // ============================================================
-
     async function loadLeaderboard() {
-      leaderboardList.innerHTML = '<div class="loading">Загрузка...</div>';
+      if (!leaderboardList.querySelector('.leaderboard-item') && !leaderboardList.querySelector('.empty')) {
+        leaderboardList.innerHTML = '<div class="loading">Загрузка...</div>';
+      }
       try {
         const res = await fetch(API_URL + '/api/top', { headers: { 'X-Init-Data': tg ? tg.initData : '' } });
         const data = await res.json();
-        if (!data.players || data.players.length === 0) { leaderboardList.innerHTML = '<div class="empty">Пока никого нет 😢</div>'; return; }
-        const myId = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : null;
-        const medals = ['🥇', '🥈', '🥉'];
-        let html = '';
-        data.players.forEach((p, i) => {
-          let rankClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
-          const isMe = p.user_id === myId ? 'me' : '';
-          const rankDisplay = i < 3 ? medals[i] : String(i + 1);
-          const rawName = p.display_name || 'Игрок';
-          let name = escapeHtml(rawName.charAt(0) === '@' ? rawName : '@' + rawName);
-          if (p.is_premium) name += ' 💎';
-          html += '<div class="leaderboard-item ' + isMe + '">';
-          html += '<div class="rank ' + rankClass + '">' + rankDisplay + '</div>';
-          html += '<div class="player-name">' + name + '</div>';
-          html += '<div class="player-score">' + formatNumber(p.count) + ' ' + COIN + '</div>';
-          html += '</div>';
-        });
-        leaderboardList.innerHTML = html;
-      } catch (e) { leaderboardList.innerHTML = '<div class="empty">Ошибка загрузки 😢</div>'; }
+        const newHtml = buildLeaderboardHtml(data);
+        if (newHtml !== leaderboardList.dataset.cachedHtml) {
+          leaderboardList.innerHTML = newHtml;
+          leaderboardList.dataset.cachedHtml = newHtml;
+        }
+      } catch (e) {
+        if (!leaderboardList.querySelector('.leaderboard-item')) {
+          leaderboardList.innerHTML = '<div class="empty">Ошибка загрузки 😢</div>';
+        }
+      }
     }
 
-    // ============================================================
-    // КАСТОМИЗАЦИЯ
-    // ============================================================
+    function buildLeaderboardHtml(data) {
+      if (!data.players || data.players.length === 0) {
+        return '<div class="empty">Пока никого нет 😢</div>';
+      }
+      const myId = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : null;
+      const medals = ['🥇', '🥈', '🥉'];
+      let html = '';
+      data.players.forEach((p, i) => {
+        let rankClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
+        const isMe = p.user_id === myId ? 'me' : '';
+        const rankDisplay = i < 3 ? medals[i] : String(i + 1);
+        const rawName = p.display_name || 'Игрок';
+        let name = escapeHtml(rawName.charAt(0) === '@' ? rawName : '@' + rawName);
+        if (p.is_premium) name += ' 💎';
+        html += '<div class="leaderboard-item ' + isMe + '">';
+        html += '<div class="rank ' + rankClass + '">' + rankDisplay + '</div>';
+        html += '<div class="player-name">' + name + '</div>';
+        html += '<div class="player-score">' + formatNumber(p.count) + ' ' + COIN + '</div>';
+        html += '</div>';
+      });
+      return html;
+    }
 
     async function loadCustomization() { await loadSkins(); await loadColors(); }
 
     async function loadSkins() {
-      skinsList.innerHTML = '<div class="loading">Загрузка...</div>';
+      if (!skinsList.querySelector('.shop-item')) {
+        skinsList.innerHTML = '<div class="loading">Загрузка...</div>';
+      }
       try {
         const res = await fetch(API_URL + '/api/skins', { headers: { 'X-Init-Data': tg ? tg.initData : '' } });
         const data = await res.json();
@@ -848,13 +901,22 @@
           counterEl.textContent = formatNumber(count);
           showToast('✅', data.skin.name + ' куплен! Активируй в инвентаре');
           if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-          loadSkins();
+          const buyBtn = document.querySelector('[data-skin="' + skinId + '"]');
+          if (buyBtn) {
+            const card = buyBtn.closest('.shop-item');
+            buyBtn.textContent = '✅ Куплено';
+            buyBtn.disabled = true;
+            const priceEl = card.querySelector('.shop-item-price');
+            if (priceEl) priceEl.remove();
+          }
         }
       } catch (e) { console.error('Buy skin error:', e); }
     }
 
     async function loadColors() {
-      colorsList.innerHTML = '<div class="loading">Загрузка...</div>';
+      if (!colorsList.querySelector('.shop-item')) {
+        colorsList.innerHTML = '<div class="loading">Загрузка...</div>';
+      }
       try {
         const res = await fetch(API_URL + '/api/colors', { headers: { 'X-Init-Data': tg ? tg.initData : '' } });
         const data = await res.json();
@@ -897,17 +959,22 @@
           counterEl.textContent = formatNumber(count);
           showToast('🎨', data.color.name + ' куплен! Активируй в инвентаре');
           if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-          loadColors();
+          const buyBtn = document.querySelector('[data-color="' + colorId + '"]');
+          if (buyBtn) {
+            const card = buyBtn.closest('.shop-item');
+            buyBtn.textContent = '✅ Куплено';
+            buyBtn.disabled = true;
+            const priceEl = card.querySelector('.shop-item-price');
+            if (priceEl) priceEl.remove();
+          }
         }
       } catch (e) { console.error('Buy color error:', e); }
     }
 
-    // ============================================================
-    // БОНУСЫ
-    // ============================================================
-
     async function loadBonuses() {
-      bonusesList.innerHTML = '<div class="loading">Загрузка...</div>';
+      if (!bonusesList.querySelector('.shop-item')) {
+        bonusesList.innerHTML = '<div class="loading">Загрузка...</div>';
+      }
       try {
         const res = await fetch(API_URL + '/api/bonuses', { headers: { 'X-Init-Data': tg ? tg.initData : '' } });
         const data = await res.json();
@@ -917,7 +984,6 @@
           const isActive = b.active ? 'shop-item-active' : '';
           let btnText, btnDisabled;
           let extraAttrs = '';
-
           if (b.active) {
             btnText = '✅ Активен';
             btnDisabled = true;
@@ -930,7 +996,6 @@
             btnText = 'Купить';
             btnDisabled = false;
           }
-
           html += '<div class="shop-item ' + isActive + '">';
           html += '<div class="shop-item-icon">' + b.icon + '</div>';
           html += '<div class="shop-item-info"><div class="shop-item-name">' + escapeHtml(b.name) + '</div>';
@@ -960,10 +1025,7 @@
         const data = await res.json();
         if (data.error === 'not_enough') { showToast('❌', 'Не хватает ' + formatNumber(data.need - data.have) + ' ' + COIN); return; }
         if (data.error === 'already_active') { showToast('⏳', data.message || 'Уже активно'); return; }
-        if (data.error === 'cooldown') {
-          showToast('⏳', 'КД: ' + formatTime(data.remaining));
-          return;
-        }
+        if (data.error === 'cooldown') { showToast('⏳', 'КД: ' + formatTime(data.remaining)); return; }
         if (data.ok) {
           count = data.newCount;
           counterEl.textContent = formatNumber(count);
@@ -975,7 +1037,15 @@
             startMultiplierTimer(data.expiresAt);
           }
           if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-          loadBonuses();
+
+          const buyBtn = document.querySelector('[data-bonus="' + bonusId + '"]');
+          if (buyBtn) {
+            buyBtn.textContent = '✅ Активен';
+            buyBtn.disabled = true;
+            if (data.expiresAt) {
+              buyBtn.setAttribute('data-active-until', data.expiresAt);
+            }
+          }
         }
       } catch (e) { console.error('Buy bonus error:', e); }
     }
@@ -1005,12 +1075,10 @@
       badge.textContent = text;
     }
 
-    // ============================================================
-    // ИНВЕНТАРЬ
-    // ============================================================
-
     async function loadInventory() {
-      inventoryList.innerHTML = '<div class="loading">Загрузка...</div>';
+      if (!inventoryList.querySelector('.shop-item')) {
+        inventoryList.innerHTML = '<div class="loading">Загрузка...</div>';
+      }
       try {
         const res = await fetch(API_URL + '/api/inventory', { headers: { 'X-Init-Data': tg ? tg.initData : '' } });
         const data = await res.json();
@@ -1088,7 +1156,22 @@
             applySkin(data.skin.id, data.skin.icon);
             showToast('🎨', data.skin.name + ' применён');
             if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-            loadInventory();
+            document.querySelectorAll('#inventoryList [data-inv]').forEach(b => {
+              const bid = b.dataset.inv;
+              const btype = b.dataset.type;
+              if (btype === 'skin') {
+                const sid = bid.replace('skin_', '');
+                if (sid === skinId) {
+                  b.textContent = '✅ Активен';
+                  b.disabled = true;
+                  b.closest('.shop-item').classList.add('shop-item-active');
+                } else {
+                  b.textContent = 'Применить';
+                  b.disabled = false;
+                  b.closest('.shop-item').classList.remove('shop-item-active');
+                }
+              }
+            });
           } else showToast('❌', data.error === 'premium_only' ? 'Только с Премиумом' : 'Ошибка');
         } else if (type === 'color') {
           const colorId = itemId.replace('color_', '');
@@ -1102,20 +1185,31 @@
             applyColor(data.color.id);
             showToast('🎨', data.color.name + ' применён');
             if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-            loadInventory();
+            document.querySelectorAll('#inventoryList [data-inv]').forEach(b => {
+              const bid = b.dataset.inv;
+              const btype = b.dataset.type;
+              if (btype === 'color') {
+                const cid = bid.replace('color_', '');
+                if (cid === colorId) {
+                  b.textContent = '✅ Активен';
+                  b.disabled = true;
+                  b.closest('.shop-item').classList.add('shop-item-active');
+                } else {
+                  b.textContent = 'Применить';
+                  b.disabled = false;
+                  b.closest('.shop-item').classList.remove('shop-item-active');
+                }
+              }
+            });
           } else showToast('❌', 'Ошибка');
         }
       } catch (e) { console.error('Activate error:', e); }
     }
 
-    // ============================================================
-    // ЛЁГКИЙ ТАЙМЕР — обновляет только текст кнопок (без запросов)
-    // ============================================================
-
+    // ЛЁГКИЙ ТАЙМЕР
     setInterval(() => {
       const now = Date.now();
 
-      // КД в бонусах
       document.querySelectorAll('#bonusesList [data-cooldown]').forEach(b => {
         const until = parseInt(b.dataset.cooldown, 10);
         const remaining = until - now;
@@ -1128,7 +1222,6 @@
         }
       });
 
-      // Активные бонусы в бонусах
       document.querySelectorAll('#bonusesList [data-active-until]').forEach(b => {
         const until = parseInt(b.dataset.activeUntil, 10);
         const remaining = until - now;
@@ -1137,22 +1230,60 @@
         }
       });
 
-      // Активные бонусы в инвентаре
       document.querySelectorAll('#inventoryList [data-inv-active]').forEach(b => {
         const until = parseInt(b.dataset.invActive, 10);
         const remaining = until - now;
         if (remaining > 0) {
           b.textContent = '⏳ ' + formatTime(remaining);
         } else {
-          b.textContent = '✅ Использован';
+          const card = b.closest('.shop-item');
+          if (card) {
+            card.style.transition = 'opacity 0.3s ease';
+            card.style.opacity = '0';
+            setTimeout(() => card.remove(), 300);
+          }
         }
       });
     }, 500);
 
-    // ============================================================
-    // ПРОМОКОД
-    // ============================================================
+    // АВТООБНОВЛЕНИЕ через reset_at
+    setInterval(async () => {
+      const lbScreen = document.getElementById('screen-leaderboard');
 
+      try {
+        const res = await fetch(API_URL + '/api/me', {
+          headers: { 'X-Init-Data': tg ? tg.initData : '' }
+        });
+        const data = await res.json();
+
+        if (data.resetAt && data.resetAt !== lastResetAt) {
+          lastResetAt = data.resetAt;
+
+          count = data.count || 0;
+          counterEl.textContent = formatNumber(count);
+
+          currentMultiplier = data.multiplier || 1;
+          updateMultiplierBadge();
+
+          applyColor(data.color || 'default');
+          const skins = window._skinsCache || {};
+          const skinData = skins[data.skin];
+          applySkin(data.skin, skinData ? skinData.icon : null);
+
+          showToast('🔄', 'Данные обновлены');
+
+          const shopScreen = document.getElementById('screen-shop');
+          if (shopScreen.classList.contains('active')) loadCustomization();
+          if (lbScreen.classList.contains('active')) loadLeaderboard();
+        }
+      } catch (e) {}
+
+      if (lbScreen.classList.contains('active')) {
+        loadLeaderboard();
+      }
+    }, 1000);
+
+    // ПРОМОКОД
     const promoBtn = document.getElementById('promoBtn');
     const promoInput = document.getElementById('promoInput');
     if (promoBtn) {
@@ -1183,10 +1314,7 @@
       finally { promoBtn.disabled = false; promoBtn.textContent = 'Активировать'; }
     }
 
-    // ============================================================
     // НИЖНЯЯ НАВИГАЦИЯ
-    // ============================================================
-
     document.getElementById('donateBtn').addEventListener('click', () => {
       if (tg && tg.openTelegramLink) tg.openTelegramLink(DONATE_URL);
       else if (tg && tg.openLink) tg.openLink(DONATE_URL);
@@ -1199,14 +1327,11 @@
       if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     });
     document.getElementById('infoBtn').addEventListener('click', () => {
-      showToast('ℹ️', 'BasicClickBot v2.0');
+      showToast('ℹ️', 'Telegram Clicker v1.0');
       if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     });
 
-    // ============================================================
     // СТАРТ
-    // ============================================================
-
     loadCount();
   </script>
 </body>
