@@ -1,13 +1,18 @@
 // ============================================================
-// BASICCLICKBOT — Cloudflare Worker
+// TELEGRAM CLICKER BOT — Cloudflare Worker
 // ============================================================
 
-const ADMIN_ID = 5946292761;
-const COIN_EMOJI = '🪙';
+// ⚠️ ЗАМЕНИ на свой Telegram ID (узнать: @userinfobot)
+const ADMIN_ID = ;
+
+// ⚠️ ЗАМЕНИ на URL своего мини-приложения на GitHub Pages
 const WEBAPP_URL = 'https://mark213364.github.io/main/index.html';
 
+// 💰 Эмодзи валюты
+const COIN_EMOJI = '💵';
+
 // ============================================================
-// ЦВЕТА
+// 🎨 ЦВЕТА ИНТЕРФЕЙСА
 // ============================================================
 const COLORS = {
   red:    { id: 'red',    name: 'Красный',    icon: '🔴', price: 1000, hex: '#ef4444' },
@@ -24,7 +29,7 @@ const COLORS = {
 };
 
 // ============================================================
-// СКИНЫ КНОПКИ
+// 🎯 СКИНЫ КНОПКИ
 // ============================================================
 const SKINS = {
   default: { id: 'default', name: 'Стандарт', icon: '⭕', price: 0 },
@@ -42,9 +47,9 @@ const SKINS = {
 };
 
 // ============================================================
-// БОНУСЫ + КД
+// 🎁 БОНУСЫ + КД
 // ============================================================
-const BONUS_COOLDOWN = 5 * 60 * 1000; // 5 минут
+const BONUS_COOLDOWN = 5 * 60 * 1000; // 5 минут между бонусами
 
 const BONUSES = {
   multiplier2: {
@@ -65,14 +70,14 @@ const BONUSES = {
 };
 
 // ============================================================
-// ПРОМОКОДЫ
+// 🎁 БАЗОВЫЕ ПРОМОКОДЫ (вшиты в код, нельзя удалить)
 // ============================================================
-const PROMOS = {
-  'FREE500К': { code: 'FREE500К', reward: 500000 },
+const BASE_PROMOS = {
+  'FREE500K': { code: 'FREE500K', reward: 500000 },
 };
 
 // ============================================================
-// WORKER
+// 🚀 WORKER
 // ============================================================
 export default {
   async fetch(request, env) {
@@ -101,9 +106,25 @@ export default {
       const update = await request.json();
       const message = update.message;
 
-      if (message && message.text === '/start') await handleStart(message, env);
-      if (message && message.text && message.text.startsWith('/reset ')) await handleReset(message, env);
-      if (message && message.text === '/wipe' && message.from.id === ADMIN_ID) await handleWipe(message, env);
+      if (message && message.text) {
+        console.log('MSG:', message.text, 'FROM:', message.from?.id);
+      }
+
+      if (message && message.text && message.text.startsWith('/start')) {
+        await handleStart(message, env);
+      }
+      if (message && message.text && message.text.startsWith('/reset ')) {
+        await handleReset(message, env);
+      }
+      if (message && message.text && message.text.startsWith('/wipe')) {
+        await handleWipe(message, env);
+      }
+      if (message && message.text && message.text.startsWith('/give ')) {
+        await handleGive(message, env);
+      }
+      if (message && message.text && message.text.startsWith('/createpromo ')) {
+        await handleCreatePromo(message, env);
+      }
 
       return new Response('OK', { status: 200 });
     } catch (e) {
@@ -114,35 +135,40 @@ export default {
 };
 
 // ============================================================
-// TELEGRAM
+// 🤖 TELEGRAM — КОМАНДЫ
 // ============================================================
 
 async function handleStart(message, env) {
-  const chatId = message.chat.id;
-  const name = [message.from.first_name, message.from.last_name]
-    .filter(Boolean).join(' ') || 'Игрок';
-  const username = message.from.username || null;
+  try {
+    const chatId = message.chat.id;
+    const name = [message.from.first_name, message.from.last_name]
+      .filter(Boolean).join(' ') || 'Игрок';
+    const username = message.from.username || null;
 
-  await env.DB.prepare(
-    `INSERT INTO counters (chat_id, name, username, count)
-     VALUES (?, ?, ?, 0)
-     ON CONFLICT(chat_id) DO UPDATE SET
-       name = excluded.name,
-       username = excluded.username`
-  ).bind(chatId, name, username).run();
+    await env.DB.prepare(
+      `INSERT INTO counters (chat_id, name, username, count)
+       VALUES (?, ?, ?, 0)
+       ON CONFLICT(chat_id) DO UPDATE SET
+         name = excluded.name,
+         username = excluded.username`
+    ).bind(chatId, name, username).run();
 
-  const result = await env.DB.prepare(
-    'SELECT count FROM counters WHERE chat_id = ?'
-  ).bind(chatId).first();
+    const result = await env.DB.prepare(
+      'SELECT count FROM counters WHERE chat_id = ?'
+    ).bind(chatId).first();
 
-  await sendMessage(env.BOT_TOKEN, chatId,
-    `👋 Привет, ${name}!\nТекущий счёт: *${result?.count ?? 0}* ${COIN_EMOJI}\n\nОткрой приложение 👇`,
-    {
-      inline_keyboard: [[
-        { text: '🚀 Открыть приложение', web_app: { url: WEBAPP_URL } }
-      ]]
-    }
-  );
+    await sendMessage(env.BOT_TOKEN, chatId,
+      `👋 Привет, ${name}!\nТекущий счёт: *${result?.count ?? 0}* ${COIN_EMOJI}\n\nОткрой приложение 👇`,
+      'Markdown',
+      {
+        inline_keyboard: [[
+          { text: '🚀 Открыть приложение', web_app: { url: WEBAPP_URL } }
+        ]]
+      }
+    );
+  } catch (e) {
+    console.error('handleStart error:', e.message, e.stack);
+  }
 }
 
 async function handleReset(message, env) {
@@ -156,17 +182,22 @@ async function handleReset(message, env) {
     return;
   }
   await env.DB.prepare(
-    'UPDATE counters SET count = 0, color = "default", skin = "default", is_premium = 0 WHERE chat_id = ?'
-  ).bind(targetId).run();
+    'UPDATE counters SET count = 0, color = "default", skin = "default", is_premium = 0, reset_at = ? WHERE chat_id = ?'
+  ).bind(Date.now(), targetId).run();
   await env.DB.prepare('DELETE FROM purchases WHERE chat_id = ?').bind(targetId).run();
   await env.DB.prepare('DELETE FROM used_promos WHERE chat_id = ?').bind(targetId).run();
   await sendMessage(env.BOT_TOKEN, message.chat.id, `✅ Сброшено для ID ${targetId}`);
 }
 
 async function handleWipe(message, env) {
+  if (message.from.id !== ADMIN_ID) {
+    await sendMessage(env.BOT_TOKEN, message.chat.id, '⛔ Нет доступа');
+    return;
+  }
+  const now = Date.now();
   await env.DB.prepare(
-    'UPDATE counters SET count = 0, color = "default", skin = "default", is_premium = 0'
-  ).run();
+    'UPDATE counters SET count = 0, color = "default", skin = "default", is_premium = 0, reset_at = ?'
+  ).bind(now).run();
   await env.DB.prepare('DELETE FROM purchases').run();
   await env.DB.prepare('DELETE FROM used_promos').run();
   await sendMessage(env.BOT_TOKEN, message.chat.id,
@@ -177,7 +208,118 @@ async function handleWipe(message, env) {
 }
 
 // ============================================================
-// API
+// /give <user_id> <count> — начислить клики (админ)
+// ============================================================
+async function handleGive(message, env) {
+  if (message.from.id !== ADMIN_ID) {
+    await sendMessage(env.BOT_TOKEN, message.chat.id, '⛔ Нет доступа');
+    return;
+  }
+
+  const parts = message.text.split(' ');
+  const targetId = parseInt(parts[1], 10);
+  const amount = parseInt(parts[2], 10);
+
+  if (!targetId || isNaN(targetId) || !amount || isNaN(amount)) {
+    await sendMessage(env.BOT_TOKEN, message.chat.id,
+      '❌ Использование: `/give <user_id> <count>`\n\nПример: `/give 5946292761 5000`',
+      'Markdown');
+    return;
+  }
+
+  const row = await env.DB.prepare(
+    'SELECT count FROM counters WHERE chat_id = ?'
+  ).bind(targetId).first();
+
+  if (!row) {
+    await sendMessage(env.BOT_TOKEN, message.chat.id,
+      '❌ Игрок с ID `' + targetId + '` не найден.\nОн должен написать боту `/start`.',
+      'Markdown');
+    return;
+  }
+
+  const newCount = Math.max(0, (row.count ?? 0) + amount);
+
+  await env.DB.prepare(
+    'UPDATE counters SET count = ?, reset_at = ? WHERE chat_id = ?'
+  ).bind(newCount, Date.now(), targetId).run();
+
+  await sendMessage(env.BOT_TOKEN, message.chat.id,
+    '✅ Начислено *' + amount.toLocaleString('ru-RU') + '* ' + COIN_EMOJI + '\n' +
+    'Игрок: `' + targetId + '`\n' +
+    'Новый счёт: *' + newCount.toLocaleString('ru-RU') + '* ' + COIN_EMOJI,
+    'Markdown');
+
+  try {
+    await sendMessage(env.BOT_TOKEN, targetId,
+      '🎁 Тебе начислено *' + amount.toLocaleString('ru-RU') + '* ' + COIN_EMOJI + '!\n' +
+      'Текущий счёт: *' + newCount.toLocaleString('ru-RU') + '* ' + COIN_EMOJI,
+      'Markdown');
+  } catch (e) {
+    console.error('Не удалось уведомить игрока:', e.message);
+  }
+}
+
+// ============================================================
+// /createpromo <code> <reward> [max_uses] — создать промокод (админ)
+// ============================================================
+async function handleCreatePromo(message, env) {
+  if (message.from.id !== ADMIN_ID) {
+    await sendMessage(env.BOT_TOKEN, message.chat.id, '⛔ Нет доступа');
+    return;
+  }
+
+  const parts = message.text.split(' ');
+  const code = (parts[1] || '').trim().toUpperCase();
+  const reward = parseInt(parts[2], 10);
+  const maxUses = parts[3] ? parseInt(parts[3], 10) : null;
+
+  if (!code || !reward || isNaN(reward)) {
+    await sendMessage(env.BOT_TOKEN, message.chat.id,
+      '❌ Использование: `/createpromo <код> <награда> [макс_использований]`\n\n' +
+      'Примеры:\n' +
+      '`/createpromo SUMMER 5000` — без ограничений\n' +
+      '`/createpromo BONUS 1000 10` — 10 использований',
+      'Markdown');
+    return;
+  }
+
+  if (reward <= 0) {
+    await sendMessage(env.BOT_TOKEN, message.chat.id, '❌ Награда должна быть больше 0');
+    return;
+  }
+
+  const existing = await env.DB.prepare(
+    'SELECT id FROM promos WHERE code = ?'
+  ).bind(code).first();
+
+  if (existing) {
+    await sendMessage(env.BOT_TOKEN, message.chat.id,
+      '❌ Промокод `' + code + '` уже существует',
+      'Markdown');
+    return;
+  }
+
+  await env.DB.prepare(
+    `INSERT INTO promos (code, reward, max_uses, uses, created_at)
+     VALUES (?, ?, ?, 0, ?)`
+  ).bind(code, reward, maxUses, Date.now()).run();
+
+  let text = '✅ Промокод создан!\n\n' +
+    'Код: `' + code + '`\n' +
+    'Награда: *' + reward.toLocaleString('ru-RU') + '* ' + COIN_EMOJI + '\n';
+
+  if (maxUses) {
+    text += 'Лимит: *' + maxUses + '* использований';
+  } else {
+    text += 'Лимит: *без ограничений*';
+  }
+
+  await sendMessage(env.BOT_TOKEN, message.chat.id, text, 'Markdown');
+}
+
+// ============================================================
+// 🌐 API ДЛЯ МИНИ-ПРИЛОЖЕНИЯ
 // ============================================================
 
 async function handleApi(request, env, path, corsHeaders) {
@@ -185,30 +327,51 @@ async function handleApi(request, env, path, corsHeaders) {
   const userId = await verifyInitData(initData, env.BOT_TOKEN);
   if (!userId) return json({ error: 'unauthorized' }, 401, corsHeaders);
 
-  // /api/me
+  // GET /api/me
   if (path === '/api/me' && request.method === 'GET') {
     const row = await env.DB.prepare(
-      'SELECT count, color, skin, is_premium FROM counters WHERE chat_id = ?'
+      'SELECT count, color, skin, is_premium, reset_at FROM counters WHERE chat_id = ?'
     ).bind(userId).first();
+
+    const now = Date.now();
+    const activeMultipliers = await env.DB.prepare(
+      `SELECT item_id, expires_at FROM purchases
+       WHERE chat_id = ? AND expires_at IS NOT NULL AND expires_at > ?`
+    ).bind(userId, now).all();
+
+    let multiplier = 1;
+    activeMultipliers.results.forEach(p => {
+      if (p.item_id === 'multiplier2') multiplier = Math.max(multiplier, 2);
+      else if (p.item_id === 'multiplier5') multiplier = Math.max(multiplier, 5);
+    });
+
     return json({
       count: row?.count ?? 0,
       color: row?.color || 'default',
       skin: row?.skin || 'default',
       isPremium: (row?.is_premium ?? 0) === 1,
+      multiplier: multiplier,
+      resetAt: row?.reset_at || 0,
       coinEmoji: COIN_EMOJI,
     }, 200, corsHeaders);
   }
 
-  // /api/count
+  // POST /api/count
   if (path === '/api/count' && request.method === 'POST') {
-    let body; try { body = await request.json(); } catch { return json({ error: 'invalid body' }, 400, corsHeaders); }
+    let body; try { body = await request.json(); } catch {
+      return json({ error: 'invalid body' }, 400, corsHeaders);
+    }
     const count = parseInt(body.count, 10);
-    if (!Number.isInteger(count) || count < 0) return json({ error: 'invalid count' }, 400, corsHeaders);
-    await env.DB.prepare('UPDATE counters SET count = ? WHERE chat_id = ?').bind(count, userId).run();
+    if (!Number.isInteger(count) || count < 0) {
+      return json({ error: 'invalid count' }, 400, corsHeaders);
+    }
+    await env.DB.prepare(
+      'UPDATE counters SET count = ? WHERE chat_id = ?'
+    ).bind(count, userId).run();
     return json({ ok: true }, 200, corsHeaders);
   }
 
-  // /api/top
+  // GET /api/top
   if (path === '/api/top' && request.method === 'GET') {
     const result = await env.DB.prepare(
       `SELECT c.chat_id AS user_id,
@@ -221,20 +384,29 @@ async function handleApi(request, env, path, corsHeaders) {
 
   // ===== ЦВЕТА =====
   if (path === '/api/colors' && request.method === 'GET') {
-    const row = await env.DB.prepare('SELECT color FROM counters WHERE chat_id = ?').bind(userId).first();
+    const row = await env.DB.prepare(
+      'SELECT color FROM counters WHERE chat_id = ?'
+    ).bind(userId).first();
     const current = row?.color || 'default';
+
     const owned = await env.DB.prepare(
       `SELECT item_id FROM purchases WHERE chat_id = ? AND item_id LIKE 'color_%'`
     ).bind(userId).all();
     const ownedIds = owned.results.map(o => o.item_id.replace('color_', ''));
+
     const colors = Object.values(COLORS).map(c => ({
-      ...c, owned: ownedIds.includes(c.id), active: c.id === current,
+      ...c,
+      owned: ownedIds.includes(c.id),
+      active: c.id === current,
     }));
+
     return json({ colors, current, coinEmoji: COIN_EMOJI }, 200, corsHeaders);
   }
 
   if (path === '/api/colors/buy' && request.method === 'POST') {
-    let body; try { body = await request.json(); } catch { return json({ error: 'invalid body' }, 400, corsHeaders); }
+    let body; try { body = await request.json(); } catch {
+      return json({ error: 'invalid body' }, 400, corsHeaders);
+    }
     const color = COLORS[body.colorId];
     if (!color) return json({ error: 'not found' }, 404, corsHeaders);
 
@@ -243,14 +415,21 @@ async function handleApi(request, env, path, corsHeaders) {
     ).bind(userId, 'color_' + color.id).first();
     if (existing) return json({ error: 'already_owned', message: 'Уже куплено' }, 400, corsHeaders);
 
-    const row = await env.DB.prepare('SELECT count FROM counters WHERE chat_id = ?').bind(userId).first();
+    const row = await env.DB.prepare(
+      'SELECT count FROM counters WHERE chat_id = ?'
+    ).bind(userId).first();
     const cur = row?.count ?? 0;
-    if (cur < color.price) return json({ error: 'not_enough', need: color.price, have: cur }, 400, corsHeaders);
+    if (cur < color.price) {
+      return json({ error: 'not_enough', need: color.price, have: cur }, 400, corsHeaders);
+    }
 
     const newCount = cur - color.price;
-    await env.DB.prepare('UPDATE counters SET count = ? WHERE chat_id = ?').bind(newCount, userId).run();
     await env.DB.prepare(
-      `INSERT INTO purchases (chat_id, item_id, expires_at, created_at) VALUES (?, ?, NULL, ?)`
+      'UPDATE counters SET count = ? WHERE chat_id = ?'
+    ).bind(newCount, userId).run();
+    await env.DB.prepare(
+      `INSERT INTO purchases (chat_id, item_id, expires_at, created_at)
+       VALUES (?, ?, NULL, ?)`
     ).bind(userId, 'color_' + color.id, Date.now()).run();
 
     return json({ ok: true, newCount, color }, 200, corsHeaders);
@@ -263,46 +442,60 @@ async function handleApi(request, env, path, corsHeaders) {
     ).bind(userId).first();
     const current = row?.skin || 'default';
     const isPremium = (row?.is_premium ?? 0) === 1;
+
     const owned = await env.DB.prepare(
       `SELECT item_id FROM purchases WHERE chat_id = ? AND item_id LIKE 'skin_%'`
     ).bind(userId).all();
     const ownedIds = owned.results.map(o => o.item_id.replace('skin_', ''));
+
     const skins = Object.values(SKINS).map(s => {
       let ownedFlag = s.id === 'default' || ownedIds.includes(s.id);
       if (s.premiumOnly && isPremium) ownedFlag = true;
       return { ...s, owned: ownedFlag, active: s.id === current };
     });
+
     return json({ skins, current, isPremium, coinEmoji: COIN_EMOJI }, 200, corsHeaders);
   }
 
   if (path === '/api/skins/buy' && request.method === 'POST') {
-    let body; try { body = await request.json(); } catch { return json({ error: 'invalid body' }, 400, corsHeaders); }
+    let body; try { body = await request.json(); } catch {
+      return json({ error: 'invalid body' }, 400, corsHeaders);
+    }
     const skin = SKINS[body.skinId];
     if (!skin) return json({ error: 'not found' }, 404, corsHeaders);
     if (skin.id === 'default') return json({ error: 'free_skin' }, 400, corsHeaders);
-    if (skin.premiumOnly) return json({ error: 'premium_only', message: 'Этот скин выдаётся с Премиумом' }, 400, corsHeaders);
+    if (skin.premiumOnly) return json({ error: 'premium_only', message: 'Скин выдаётся с Премиумом' }, 400, corsHeaders);
 
     const existing = await env.DB.prepare(
       `SELECT id FROM purchases WHERE chat_id = ? AND item_id = ?`
     ).bind(userId, 'skin_' + skin.id).first();
     if (existing) return json({ error: 'already_owned', message: 'Уже куплено' }, 400, corsHeaders);
 
-    const row = await env.DB.prepare('SELECT count FROM counters WHERE chat_id = ?').bind(userId).first();
+    const row = await env.DB.prepare(
+      'SELECT count FROM counters WHERE chat_id = ?'
+    ).bind(userId).first();
     const cur = row?.count ?? 0;
-    if (cur < skin.price) return json({ error: 'not_enough', need: skin.price, have: cur }, 400, corsHeaders);
+    if (cur < skin.price) {
+      return json({ error: 'not_enough', need: skin.price, have: cur }, 400, corsHeaders);
+    }
 
     const newCount = cur - skin.price;
-    await env.DB.prepare('UPDATE counters SET count = ? WHERE chat_id = ?').bind(newCount, userId).run();
     await env.DB.prepare(
-      `INSERT INTO purchases (chat_id, item_id, expires_at, created_at) VALUES (?, ?, NULL, ?)`
+      'UPDATE counters SET count = ? WHERE chat_id = ?'
+    ).bind(newCount, userId).run();
+    await env.DB.prepare(
+      `INSERT INTO purchases (chat_id, item_id, expires_at, created_at)
+       VALUES (?, ?, NULL, ?)`
     ).bind(userId, 'skin_' + skin.id, Date.now()).run();
 
     return json({ ok: true, newCount, skin }, 200, corsHeaders);
   }
 
-  // ===== ИНВЕНТАРЬ — АКТИВАЦИЯ СКИНА =====
+  // ===== АКТИВАЦИЯ СКИНА =====
   if (path === '/api/inventory/activate/skin' && request.method === 'POST') {
-    let body; try { body = await request.json(); } catch { return json({ error: 'invalid body' }, 400, corsHeaders); }
+    let body; try { body = await request.json(); } catch {
+      return json({ error: 'invalid body' }, 400, corsHeaders);
+    }
     const skin = SKINS[body.skinId];
     if (!skin) return json({ error: 'not found' }, 404, corsHeaders);
 
@@ -313,20 +506,28 @@ async function handleApi(request, env, path, corsHeaders) {
 
       if (!existing) {
         if (skin.premiumOnly) {
-          const userRow = await env.DB.prepare('SELECT is_premium FROM counters WHERE chat_id = ?').bind(userId).first();
-          if ((userRow?.is_premium ?? 0) !== 1) return json({ error: 'premium_only' }, 400, corsHeaders);
+          const userRow = await env.DB.prepare(
+            'SELECT is_premium FROM counters WHERE chat_id = ?'
+          ).bind(userId).first();
+          if ((userRow?.is_premium ?? 0) !== 1) {
+            return json({ error: 'premium_only' }, 400, corsHeaders);
+          }
         } else {
           return json({ error: 'not_owned' }, 400, corsHeaders);
         }
       }
     }
-    await env.DB.prepare('UPDATE counters SET skin = ? WHERE chat_id = ?').bind(skin.id, userId).run();
+    await env.DB.prepare(
+      'UPDATE counters SET skin = ? WHERE chat_id = ?'
+    ).bind(skin.id, userId).run();
     return json({ ok: true, skin }, 200, corsHeaders);
   }
 
-  // ===== ИНВЕНТАРЬ — АКТИВАЦИЯ ЦВЕТА =====
+  // ===== АКТИВАЦИЯ ЦВЕТА =====
   if (path === '/api/inventory/activate/color' && request.method === 'POST') {
-    let body; try { body = await request.json(); } catch { return json({ error: 'invalid body' }, 400, corsHeaders); }
+    let body; try { body = await request.json(); } catch {
+      return json({ error: 'invalid body' }, 400, corsHeaders);
+    }
     const color = COLORS[body.colorId];
     if (!color) return json({ error: 'not found' }, 404, corsHeaders);
 
@@ -335,50 +536,96 @@ async function handleApi(request, env, path, corsHeaders) {
     ).bind(userId, 'color_' + color.id).first();
     if (!existing) return json({ error: 'not_owned' }, 400, corsHeaders);
 
-    await env.DB.prepare('UPDATE counters SET color = ? WHERE chat_id = ?').bind(color.id, userId).run();
+    await env.DB.prepare(
+      'UPDATE counters SET color = ? WHERE chat_id = ?'
+    ).bind(color.id, userId).run();
     return json({ ok: true, color }, 200, corsHeaders);
   }
 
   // ===== ИНВЕНТАРЬ =====
   if (path === '/api/inventory' && request.method === 'GET') {
+    // Автоочистка истёкших бонусов
+    await env.DB.prepare(
+      `DELETE FROM purchases
+       WHERE chat_id = ?
+         AND item_id IN ('multiplier2', 'multiplier5')
+         AND expires_at IS NOT NULL
+         AND expires_at < ?`
+    ).bind(userId, Date.now()).run();
+
     const purchases = await env.DB.prepare(
       `SELECT item_id, expires_at, created_at FROM purchases
        WHERE chat_id = ? ORDER BY created_at DESC`
     ).bind(userId).all();
+
+    // 💎 Премиум-скин выдаётся автоматически
+    const userRow = await env.DB.prepare(
+      'SELECT is_premium FROM counters WHERE chat_id = ?'
+    ).bind(userId).first();
+    const isPremium = (userRow?.is_premium ?? 0) === 1;
+    const hasGem = purchases.results.some(p => p.item_id === 'skin_gem');
+    if (isPremium && !hasGem) {
+      purchases.results.push({
+        item_id: 'skin_gem',
+        expires_at: null,
+        created_at: Date.now(),
+      });
+    }
+
     const items = purchases.results.map(p => {
       const id = p.item_id;
       let type = 'unknown', name = id, icon = '❓';
+
       if (id.startsWith('color_')) {
         const c = COLORS[id.replace('color_', '')];
         if (c) { type = 'color'; name = c.name; icon = c.icon; }
       } else if (id.startsWith('skin_')) {
         const s = SKINS[id.replace('skin_', '')];
         if (s) { type = 'skin'; name = s.name; icon = s.icon; }
-      } else if (id === 'premium') { type = 'premium'; name = 'Премиум'; icon = '💎'; }
-      else if (id === 'multiplier2') { type = 'bonus'; name = 'x2 кликов'; icon = '⚡'; }
-      else if (id === 'multiplier5') { type = 'bonus'; name = 'x5 кликов'; icon = '🔥'; }
+      } else if (id === 'premium') {
+        type = 'premium'; name = 'Премиум'; icon = '💎';
+      } else if (id === 'multiplier2') {
+        type = 'bonus'; name = 'x2 кликов'; icon = '⚡';
+      } else if (id === 'multiplier5') {
+        type = 'bonus'; name = 'x5 кликов'; icon = '🔥';
+      }
+
       return {
-        itemId: id, type, name, icon,
-        expiresAt: p.expires_at, createdAt: p.created_at,
+        itemId: id,
+        type,
+        name,
+        icon,
+        expiresAt: p.expires_at,
+        createdAt: p.created_at,
         isActive: p.expires_at === null || p.expires_at > Date.now(),
       };
     });
+
     return json({ items, coinEmoji: COIN_EMOJI }, 200, corsHeaders);
   }
 
   // ===== БОНУСЫ =====
   if (path === '/api/bonuses' && request.method === 'GET') {
     const now = Date.now();
+
     const purchases = await env.DB.prepare(
       `SELECT item_id, expires_at FROM purchases
        WHERE chat_id = ? AND expires_at IS NOT NULL AND expires_at > ?`
     ).bind(userId, now).all();
-    const userRow = await env.DB.prepare('SELECT is_premium FROM counters WHERE chat_id = ?').bind(userId).first();
+
+    const userRow = await env.DB.prepare(
+      'SELECT is_premium FROM counters WHERE chat_id = ?'
+    ).bind(userId).first();
 
     let multiplier = 1, activeUntil = 0;
     purchases.results.forEach(p => {
-      if (p.item_id === 'multiplier2') { multiplier = Math.max(multiplier, 2); activeUntil = Math.max(activeUntil, p.expires_at); }
-      else if (p.item_id === 'multiplier5') { multiplier = Math.max(multiplier, 5); activeUntil = Math.max(activeUntil, p.expires_at); }
+      if (p.item_id === 'multiplier2') {
+        multiplier = Math.max(multiplier, 2);
+        activeUntil = Math.max(activeUntil, p.expires_at);
+      } else if (p.item_id === 'multiplier5') {
+        multiplier = Math.max(multiplier, 5);
+        activeUntil = Math.max(activeUntil, p.expires_at);
+      }
     });
 
     const cooldowns = {};
@@ -398,46 +645,60 @@ async function handleApi(request, env, path, corsHeaders) {
 
     const bonuses = Object.values(BONUSES).map(b => {
       let active = false;
-      if (b.id === 'premium') active = (userRow?.is_premium ?? 0) === 1;
-      else active = purchases.results.some(p => p.item_id === b.id);
-
+      if (b.id === 'premium') {
+        active = (userRow?.is_premium ?? 0) === 1;
+      } else {
+        active = purchases.results.some(p => p.item_id === b.id);
+      }
       const cooldownUntil = cooldowns[b.id] || 0;
       const onCooldown = cooldownUntil > now;
-
       return { ...b, active, onCooldown, cooldownUntil };
     });
 
-    return json({
-      bonuses, multiplier, activeUntil,
-      coinEmoji: COIN_EMOJI,
-    }, 200, corsHeaders);
+    return json({ bonuses, multiplier, activeUntil, coinEmoji: COIN_EMOJI }, 200, corsHeaders);
   }
 
   if (path === '/api/bonuses/buy' && request.method === 'POST') {
-    let body; try { body = await request.json(); } catch { return json({ error: 'invalid body' }, 400, corsHeaders); }
+    let body; try { body = await request.json(); } catch {
+      return json({ error: 'invalid body' }, 400, corsHeaders);
+    }
     const bonus = BONUSES[body.bonusId];
     if (!bonus) return json({ error: 'bonus not found' }, 404, corsHeaders);
     const now = Date.now();
 
+    // Премиум
     if (bonus.id === 'premium') {
-      const userRow = await env.DB.prepare('SELECT count, is_premium FROM counters WHERE chat_id = ?').bind(userId).first();
-      if ((userRow?.is_premium ?? 0) === 1) return json({ error: 'already_active', message: 'Премиум уже куплен' }, 400, corsHeaders);
+      const userRow = await env.DB.prepare(
+        'SELECT count, is_premium FROM counters WHERE chat_id = ?'
+      ).bind(userId).first();
+      if ((userRow?.is_premium ?? 0) === 1) {
+        return json({ error: 'already_active', message: 'Премиум уже куплен' }, 400, corsHeaders);
+      }
       const cur = userRow?.count ?? 0;
-      if (cur < bonus.price) return json({ error: 'not_enough', need: bonus.price, have: cur }, 400, corsHeaders);
+      if (cur < bonus.price) {
+        return json({ error: 'not_enough', need: bonus.price, have: cur }, 400, corsHeaders);
+      }
       const newCount = cur - bonus.price;
-      await env.DB.prepare('UPDATE counters SET count = ?, is_premium = 1 WHERE chat_id = ?').bind(newCount, userId).run();
       await env.DB.prepare(
-        `INSERT INTO purchases (chat_id, item_id, expires_at, created_at) VALUES (?, 'premium', NULL, ?)`
+        'UPDATE counters SET count = ?, is_premium = 1 WHERE chat_id = ?'
+      ).bind(newCount, userId).run();
+      await env.DB.prepare(
+        `INSERT INTO purchases (chat_id, item_id, expires_at, created_at)
+         VALUES (?, 'premium', NULL, ?)`
       ).bind(userId, now).run();
       return json({ ok: true, newCount, bonus }, 200, corsHeaders);
     }
 
+    // Проверка активного
     const active = await env.DB.prepare(
       `SELECT id FROM purchases WHERE chat_id = ? AND item_id = ?
          AND expires_at IS NOT NULL AND expires_at > ?`
     ).bind(userId, bonus.id, now).first();
-    if (active) return json({ error: 'already_active', message: 'Бонус уже действует' }, 400, corsHeaders);
+    if (active) {
+      return json({ error: 'already_active', message: 'Бонус уже действует' }, 400, corsHeaders);
+    }
 
+    // Проверка КД
     const lastEnded = await env.DB.prepare(
       `SELECT expires_at FROM purchases
        WHERE chat_id = ? AND item_id = ?
@@ -457,37 +718,83 @@ async function handleApi(request, env, path, corsHeaders) {
       }
     }
 
-    const row = await env.DB.prepare('SELECT count FROM counters WHERE chat_id = ?').bind(userId).first();
+    // Покупка
+    const row = await env.DB.prepare(
+      'SELECT count FROM counters WHERE chat_id = ?'
+    ).bind(userId).first();
     const cur = row?.count ?? 0;
-    if (cur < bonus.price) return json({ error: 'not_enough', need: bonus.price, have: cur }, 400, corsHeaders);
+    if (cur < bonus.price) {
+      return json({ error: 'not_enough', need: bonus.price, have: cur }, 400, corsHeaders);
+    }
 
     const newCount = cur - bonus.price;
     const expiresAt = now + bonus.duration;
-    await env.DB.prepare('UPDATE counters SET count = ? WHERE chat_id = ?').bind(newCount, userId).run();
+
     await env.DB.prepare(
-      `INSERT INTO purchases (chat_id, item_id, expires_at, created_at) VALUES (?, ?, ?, ?)`
+      'UPDATE counters SET count = ? WHERE chat_id = ?'
+    ).bind(newCount, userId).run();
+    await env.DB.prepare(
+      `INSERT INTO purchases (chat_id, item_id, expires_at, created_at)
+       VALUES (?, ?, ?, ?)`
     ).bind(userId, bonus.id, expiresAt, now).run();
+
     return json({ ok: true, newCount, bonus, expiresAt }, 200, corsHeaders);
   }
 
   // ===== ПРОМОКОД =====
   if (path === '/api/promo' && request.method === 'POST') {
-    let body; try { body = await request.json(); } catch { return json({ error: 'invalid body' }, 400, corsHeaders); }
+    let body; try { body = await request.json(); } catch {
+      return json({ error: 'invalid body' }, 400, corsHeaders);
+    }
     const code = (body.code || '').trim().toUpperCase();
-    if (!code) return json({ error: 'empty_code', message: 'Введи промокод' }, 400, corsHeaders);
-    const promo = PROMOS[code];
-    if (!promo) return json({ error: 'invalid_code', message: 'Промокод не существует' }, 404, corsHeaders);
+    if (!code) {
+      return json({ error: 'empty_code', message: 'Введи промокод' }, 400, corsHeaders);
+    }
+
+    let promo = BASE_PROMOS[code];
+    let promoId = null;
+
+    if (!promo) {
+      const dbPromo = await env.DB.prepare(
+        'SELECT id, reward, max_uses, uses FROM promos WHERE code = ?'
+      ).bind(code).first();
+
+      if (!dbPromo) {
+        return json({ error: 'invalid_code', message: 'Промокод не существует' }, 404, corsHeaders);
+      }
+      if (dbPromo.max_uses !== null && dbPromo.uses >= dbPromo.max_uses) {
+        return json({ error: 'limit_reached', message: 'Лимит использований исчерпан' }, 400, corsHeaders);
+      }
+      promo = { code, reward: dbPromo.reward };
+      promoId = dbPromo.id;
+    }
+
     const used = await env.DB.prepare(
       'SELECT id FROM used_promos WHERE chat_id = ? AND promo_code = ?'
     ).bind(userId, code).first();
-    if (used) return json({ error: 'already_used', message: 'Ты уже использовал этот промокод' }, 400, corsHeaders);
-    const row = await env.DB.prepare('SELECT count FROM counters WHERE chat_id = ?').bind(userId).first();
+    if (used) {
+      return json({ error: 'already_used', message: 'Ты уже использовал этот промокод' }, 400, corsHeaders);
+    }
+
+    const row = await env.DB.prepare(
+      'SELECT count FROM counters WHERE chat_id = ?'
+    ).bind(userId).first();
     const cur = row?.count ?? 0;
     const newCount = cur + promo.reward;
-    await env.DB.prepare('UPDATE counters SET count = ? WHERE chat_id = ?').bind(newCount, userId).run();
+
+    await env.DB.prepare(
+      'UPDATE counters SET count = ? WHERE chat_id = ?'
+    ).bind(newCount, userId).run();
     await env.DB.prepare(
       `INSERT INTO used_promos (chat_id, promo_code, used_at) VALUES (?, ?, ?)`
     ).bind(userId, code, Date.now()).run();
+
+    if (promoId) {
+      await env.DB.prepare(
+        'UPDATE promos SET uses = uses + 1 WHERE id = ?'
+      ).bind(promoId).run();
+    }
+
     return json({ ok: true, reward: promo.reward, newCount }, 200, corsHeaders);
   }
 
@@ -495,20 +802,25 @@ async function handleApi(request, env, path, corsHeaders) {
 }
 
 // ============================================================
-// ХЕЛПЕРЫ
+// 🔧 ХЕЛПЕРЫ
 // ============================================================
 
 function json(data, status, corsHeaders) {
   return new Response(JSON.stringify(data), {
-    status, headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    status,
+    headers: { 'Content-Type': 'application/json', ...corsHeaders }
   });
 }
 
-async function sendMessage(token, chatId, text, keyboard) {
+async function sendMessage(token, chatId, text, parseMode, keyboard) {
+  const body = { chat_id: chatId, text };
+  if (parseMode) body.parse_mode = parseMode;
+  if (keyboard) body.reply_markup = keyboard;
+
   return fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'Markdown', reply_markup: keyboard })
+    body: JSON.stringify(body)
   });
 }
 
@@ -519,21 +831,37 @@ async function verifyInitData(initData, botToken) {
     const hash = params.get('hash');
     if (!hash) return null;
     params.delete('hash');
+
     const entries = [...params.entries()].sort((a, b) => a[0].localeCompare(b[0]));
     let dataCheckString = '';
     for (let i = 0; i < entries.length; i++) {
       if (i > 0) dataCheckString += '\n';
       dataCheckString += entries[i][0] + '=' + entries[i][1];
     }
+
     const authDate = parseInt(params.get('auth_date'), 10);
     if (!authDate || Date.now() / 1000 - authDate > 86400) return null;
+
     const encoder = new TextEncoder();
-    const secretKey = await crypto.subtle.importKey('raw', encoder.encode('WebAppData'), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-    const derivedKey = await crypto.subtle.sign('HMAC', secretKey, encoder.encode(botToken));
-    const verifyKey = await crypto.subtle.importKey('raw', derivedKey, { name: 'HMAC', hash: 'SHA-256' }, false, ['verify']);
-    const hashBytes = new Uint8Array(hash.match(/.{1,2}/g).map(b => parseInt(b, 16)));
-    const isValid = await crypto.subtle.verify('HMAC', verifyKey, hashBytes, encoder.encode(dataCheckString));
+    const secretKey = await crypto.subtle.importKey(
+      'raw', encoder.encode('WebAppData'),
+      { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+    );
+    const derivedKey = await crypto.subtle.sign(
+      'HMAC', secretKey, encoder.encode(botToken)
+    );
+    const verifyKey = await crypto.subtle.importKey(
+      'raw', derivedKey,
+      { name: 'HMAC', hash: 'SHA-256' }, false, ['verify']
+    );
+    const hashBytes = new Uint8Array(
+      hash.match(/.{1,2}/g).map(b => parseInt(b, 16))
+    );
+    const isValid = await crypto.subtle.verify(
+      'HMAC', verifyKey, hashBytes, encoder.encode(dataCheckString)
+    );
     if (!isValid) return null;
+
     const user = JSON.parse(params.get('user') || '{}');
     return user.id || null;
   } catch (e) {
