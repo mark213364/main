@@ -3,7 +3,7 @@
 // ============================================================
 
 // ⚠️ ЗАМЕНИ на свой Telegram ID (узнать: @userinfobot)
-const ADMIN_ID = ;
+const ADMIN_ID = 5946292761;
 
 // ⚠️ ЗАМЕНИ на URL своего мини-приложения на GitHub Pages
 const WEBAPP_URL = 'https://mark213364.github.io/main/index.html';
