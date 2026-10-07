@@ -1,8 +1,0 @@
-name = "yellow"
-main = "_worker.js"
-compatibility_date = "2025-11-04"
-
-# KV namespace для хранения настроек (пока не обязателен, но полезен)
-# [[kv_namespaces]]
-# binding = "KV"
-# id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
