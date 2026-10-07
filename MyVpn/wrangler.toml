@@ -1,4 +1,4 @@
-name = "MyVpn"
+name = "my-vpn"
 main = "_worker.js"
 compatibility_date = "2025-11-04"
 
