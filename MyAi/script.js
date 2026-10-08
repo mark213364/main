@@ -1,6 +1,6 @@
 const API_URL = "https://api.groq.com/openai/v1/chat/completions";
 const API_KEY = "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";
-const MODEL = "llama-3.3-70b-versatile";
+const MODEL = "openai/gpt-oss-120b";
 
 // Key used to store/retrieve the conversation history in localStorage
 const STORAGE_KEY = "zyroChatHistory";
