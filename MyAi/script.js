@@ -1,5 +1,6 @@
-const API_URL = "https://llm.4geeks.ai/v1/chat/completions";
-const MODEL = "downtown-miami/groq/llama-3.1-8b-instant";
+const API_URL = "https://api.groq.com/openai/v1/chat/completions";
+const API_KEY = "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";
+const MODEL = "llama-3.3-70b-versatile";
 
 // Key used to store/retrieve the conversation history in localStorage
 const STORAGE_KEY = "zyroChatHistory";
