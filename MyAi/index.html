@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZyRo Chat</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="app">
+
+    <header class="app-header">
+      <h1>Zyro Chat</h1>
+    </header>
+
+    <div class="metrics-panel" id="metricsPanel">
+      <span>Prompt tokens: <strong id="promptTokens">0</strong></span>
+      <span>Completion tokens: <strong id="completionTokens">0</strong></span>
+      <span>Total tokens: <strong id="totalTokens">0</strong></span>
+      <span>Response time: <strong id="responseTime">-</strong></span>
+    </div>
+
+    <div class="chat-window" id="chatWindow">
+      <!-- Messages will be added here dynamically by JavaScript -->
+    </div>
+
+    <div class="error-banner" id="errorBanner" hidden></div>
+
+    <form class="chat-form" id="chatForm">
+      <input
+        type="text"
+        id="userInput"
+        placeholder="Type your message..."
+        autocomplete="off"
+        required
+      >
+      <button type="submit" id="sendButton">Send</button>
+    </form>
+
+  </div>
+  <script src="config.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
